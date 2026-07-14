@@ -209,7 +209,7 @@ try {
     <?php
     // Shared public header
     define('PUBLIC_ROOT', '/aries_jersey/');
-    define('ADMIN_URL',   '/aries_jersey/admin/login.php');
+    define('ADMIN_URL', '/aries_jersey/admin/login.php');
     require_once __DIR__ . '/includes/public_header.php';
     ?>
 
@@ -233,7 +233,7 @@ try {
                     Active Kit Registrations
                 </h2>
 
-                <?php if ($forms === null): ?>
+                <?php if ($forms === null) : ?>
                     <!-- Database uninitialized config link -->
                     <div class="alert alert-warning" style="margin-top: 1rem;">
                         <strong>System Notice:</strong> The database connections are uninitialized. If you are setting up the system for the first time:
@@ -241,9 +241,9 @@ try {
                             <a href="admin/migrations.php" class="btn btn-primary btn-sm">Open Migration Setup Wizard</a>
                         </div>
                     </div>
-                <?php elseif (count($forms) > 0): ?>
+                <?php elseif (count($forms) > 0) : ?>
                     <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                        <?php foreach ($forms as $form): ?>
+                        <?php foreach ($forms as $form) : ?>
                             <a href="form.php?slug=<?php echo urlencode($form['slug']); ?>" class="form-link-card">
                                 <div>
                                     <strong style="color: var(--text-primary); font-size: 1.05rem;"><?php echo htmlspecialchars($form['title']); ?></strong>
@@ -253,7 +253,7 @@ try {
                             </a>
                         <?php endforeach; ?>
                     </div>
-                <?php else: ?>
+                <?php else : ?>
                     <div style="padding: 2rem; background: rgba(30, 58, 101, 0.2); border: 1px dashed var(--border-color); border-radius: var(--radius-md); text-align: center; color: var(--text-secondary);">
                         <p style="font-weight: 500;">No registrations are open at the moment.</p>
                         <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">Please check back later or contact your team coach.</p>

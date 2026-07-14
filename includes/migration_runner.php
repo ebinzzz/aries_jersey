@@ -1,12 +1,15 @@
 <?php
+
 // includes/migration_runner.php
 require_once __DIR__ . '/db_config.php';
 
-class MigrationRunner {
+class MigrationRunner
+{
     private $conn;
     private $migrationsDir;
 
-    public function __construct() {
+    public function __construct()
+    {
         global $conn;
         $this->conn = $conn;
         $this->migrationsDir = dirname(__DIR__) . '/database/migrations';
@@ -15,22 +18,27 @@ class MigrationRunner {
     /**
      * Check if MySQL server connection is alive
      */
-    public function isConnected() {
+    public function isConnected()
+    {
         return $this->conn !== null && !$this->conn->connect_error;
     }
 
     /**
      * Check if the specific database exists
      */
-    public function databaseExists() {
-        if (!$this->isConnected()) return false;
+    public function databaseExists()
+    {
+        if (!$this->isConnected()) {
+            return false;
+        }
         return @$this->conn->select_db(DB_NAME);
     }
 
     /**
      * Create the database
      */
-    public function createDatabase() {
+    public function createDatabase()
+    {
         if (!$this->isConnected()) {
             throw new Exception("Cannot create database: Not connected to MySQL server.");
         }
@@ -46,7 +54,8 @@ class MigrationRunner {
     /**
      * Ensure the migrations table exists
      */
-    public function ensureMigrationsTable() {
+    public function ensureMigrationsTable()
+    {
         if (!$this->databaseExists()) {
             $this->createDatabase();
         }
@@ -56,7 +65,7 @@ class MigrationRunner {
             `migration_name` VARCHAR(255) NOT NULL UNIQUE,
             `applied_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
-        
+
         if (!$this->conn->query($sql)) {
             throw new Exception("Error creating migrations table: " . $this->conn->error);
         }
@@ -65,7 +74,8 @@ class MigrationRunner {
     /**
      * Get list of applied migrations
      */
-    public function getAppliedMigrations() {
+    public function getAppliedMigrations()
+    {
         try {
             $this->ensureMigrationsTable();
             $applied = [];
@@ -85,7 +95,8 @@ class MigrationRunner {
     /**
      * Get list of migration files in directory
      */
-    public function getMigrationFiles() {
+    public function getMigrationFiles()
+    {
         if (!is_dir($this->migrationsDir)) {
             return [];
         }
@@ -103,7 +114,8 @@ class MigrationRunner {
     /**
      * Get pending migrations
      */
-    public function getPendingMigrations() {
+    public function getPendingMigrations()
+    {
         $applied = $this->getAppliedMigrations();
         $files = $this->getMigrationFiles();
         return array_diff($files, $applied);
@@ -112,16 +124,17 @@ class MigrationRunner {
     /**
      * Run a single migration file
      */
-    public function runMigration($fileName) {
+    public function runMigration($fileName)
+    {
         $filePath = $this->migrationsDir . '/' . $fileName;
         if (!file_exists($filePath)) {
             throw new Exception("Migration file not found: " . $fileName);
         }
 
         $sqlContent = file_get_contents($filePath);
-        
+
         $this->ensureMigrationsTable();
-        
+
         $this->conn->begin_transaction();
         try {
             // Execute multi queries
@@ -132,7 +145,7 @@ class MigrationRunner {
                     }
                 } while ($this->conn->more_results() && $this->conn->next_result());
             }
-            
+
             // Check for multi query execution errors
             if ($this->conn->error) {
                 throw new Exception("SQL execution error in " . $fileName . ": " . $this->conn->error);
@@ -157,7 +170,8 @@ class MigrationRunner {
     /**
      * Run all pending migrations
      */
-    public function runPendingMigrations() {
+    public function runPendingMigrations()
+    {
         $pending = $this->getPendingMigrations();
         $executed = [];
         foreach ($pending as $migration) {
@@ -170,14 +184,15 @@ class MigrationRunner {
     /**
      * Run arbitrary SQL query
      */
-    public function runArbitraryQuery($sql) {
+    public function runArbitraryQuery($sql)
+    {
         $this->ensureMigrationsTable();
-        
+
         $result = $this->conn->query($sql);
         if (!$result) {
             throw new Exception($this->conn->error);
         }
-        
+
         if ($result === true) {
             return [
                 'type' => 'success',

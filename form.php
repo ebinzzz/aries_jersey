@@ -85,11 +85,11 @@ $errors = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_GET['success'])) {
     // 1. Core validations
     $player_name = sanitize_form_input('player_name', $_POST['player_name'] ?? '');
-    
+
     if (empty($player_name)) {
         $errors['player_name'] = "Player Name is required.";
     }
-    
+
     // Auto-resolve team_id to "Kollam Sailors"
     $team_id = 0;
     $t_stmt = $db->prepare("SELECT `id` FROM `teams` WHERE `name` = 'Kollam Sailors' LIMIT 1");
@@ -107,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_GET['success'])) {
             $team_id = $t_res->fetch_assoc()['id'];
         }
     }
-    
+
     // 2. Dynamic fields validation & collecting values
     $field_values = [];
     // Initialize all columns: qty fields to 0, others to NULL
@@ -115,17 +115,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_GET['success'])) {
     foreach ($all_catalog_keys as $key) {
         $field_values[$key] = in_array($key, $qty_fields) ? 0 : null;
     }
-    
+
     foreach ($fields_config as $key => $config) {
         $is_qty = in_array($key, $qty_fields) || ($config['type'] ?? '') === 'stepper';
         $raw    = $_POST[$key] ?? '';
         $val    = sanitize_form_input($key, $raw);
         $is_empty = $is_qty ? ($raw === '') : empty($val);
-        
+
         if ($config['required'] && $is_empty) {
             $errors[$key] = $config['label'] . " is required.";
         }
-        
+
         // Custom validations
         if (!$is_empty) {
             if ($key === 'mobile_number' && !preg_match('/^[0-9+ ]{8,20}$/', $val)) {
@@ -139,17 +139,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_GET['success'])) {
             }
             if (in_array($key, ['jersey_number_opt1', 'jersey_number_opt2', 'jersey_number_opt3'])) {
                 $n = intval($val);
-                if ($n < 0 || $n > 99) $errors[$key] = "Jersey number must be between 0 and 99.";
+                if ($n < 0 || $n > 99) {
+                    $errors[$key] = "Jersey number must be between 0 and 99.";
+                }
             }
             if ($is_qty) {
                 $q = intval($val);
-                if ($q < 0 || $q > 3) $errors[$key] = $config['label'] . " must be 0–3.";
+                if ($q < 0 || $q > 3) {
+                    $errors[$key] = $config['label'] . " must be 0–3.";
+                }
             }
         }
-        
+
         $field_values[$key] = $is_qty ? intval($val) : (!$is_empty ? $val : null);
     }
-    
+
     // Combined sleeve-qty validation (max 4 total)
     if (isset($fields_config['half_sleeve_qty']) || isset($fields_config['full_sleeve_qty'])) {
         $hq = intval($field_values['half_sleeve_qty']);
@@ -158,7 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_GET['success'])) {
             $errors['half_sleeve_qty'] = "Total playing jersey quantity (Half + Full Sleeve) cannot exceed 4.";
         }
     }
-    
+
     // Duplicate jersey number validation (Options 1, 2, 3 must be unique when filled)
     $jersey_opts = [];
     foreach (['jersey_number_opt1', 'jersey_number_opt2', 'jersey_number_opt3'] as $opt_key) {
@@ -171,13 +175,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_GET['success'])) {
             }
         }
     }
-    
+
     // Save record if no validation errors
     if (empty($errors)) {
         try {
             $hq_int = intval($field_values['half_sleeve_qty']);
             $fq_int = intval($field_values['full_sleeve_qty']);
-            
+
             $insert_query = "
                 INSERT INTO `registrations` (
                     `form_id`, `player_name`, `team_id`,
@@ -190,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_GET['success'])) {
                     `jersey_number`, `shorts_size`, `trouser_size`, `initials`, `socks_size`, `chest_size`
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ";
-            
+
             $ins = $db->prepare($insert_query);
             $ins->bind_param(
                 "isisssssssiissssssssss",
@@ -217,15 +221,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_GET['success'])) {
                 $field_values['socks_size'],
                 $field_values['chest_size']
             );
-            
+
             if ($ins->execute()) {
                 $_SESSION['last_submission'] = [
                     'player_name'       => $player_name,
                     'team_name'         => 'Kollam Sailors',
                     'jersey_name'       => $field_values['jersey_name'],
-                    'jersey_number_opt1'=> $field_values['jersey_number_opt1'],
-                    'jersey_number_opt2'=> $field_values['jersey_number_opt2'],
-                    'jersey_number_opt3'=> $field_values['jersey_number_opt3'],
+                    'jersey_number_opt1' => $field_values['jersey_number_opt1'],
+                    'jersey_number_opt2' => $field_values['jersey_number_opt2'],
+                    'jersey_number_opt3' => $field_values['jersey_number_opt3'],
                     'half_sleeve_qty'   => $hq_int,
                     'full_sleeve_qty'   => $fq_int,
                 ];
@@ -249,13 +253,14 @@ if (isset($_GET['success'])) {
 }
 
 // Helper to draw inputs
-function render_field_input($key, $config, $errors) {
+function render_field_input($key, $config, $errors)
+{
     $has_error = isset($errors[$key]);
     $value = isset($_POST[$key]) ? htmlspecialchars($_POST[$key]) : '';
-    
+
     echo '<div class="form-group">';
     echo '<label class="form-label" for="' . $key . '">' . htmlspecialchars($config['label']) . ($config['required'] ? ' <span style="color:var(--primary);">*</span>' : '') . '</label>';
-    
+
     if ($config['type'] === 'select') {
         echo '<select id="' . $key . '" name="' . $key . '" class="form-control" ' . ($config['required'] ? 'required' : '') . '>';
         echo '<option value="">Select option</option>';
@@ -264,7 +269,6 @@ function render_field_input($key, $config, $errors) {
             echo '<option value="' . htmlspecialchars($opt) . '" ' . $selected . '>' . htmlspecialchars($opt) . '</option>';
         }
         echo '</select>';
-        
     } elseif ($config['type'] === 'radio' && !empty($config['options'])) {
         // Custom styled radio button group
         echo '<div class="radio-group">';
@@ -277,18 +281,16 @@ function render_field_input($key, $config, $errors) {
             echo '</label>';
         }
         echo '</div>';
-        
     } elseif (in_array($key, ['half_sleeve_qty', 'full_sleeve_qty']) || ($config['type'] ?? '') === 'stepper') {
         // Quantity stepper (handles both legacy key check and catalog type='stepper')
         $cur = isset($_POST[$key]) ? intval($_POST[$key]) : 0;
         echo '<div class="stepper-container">';
-        echo '<button type="button" class="stepper-btn" onclick="adjustQty(\''. $key .'\', -1)" id="btn-minus-' . $key . '"' . ($cur <= 0 ? ' disabled' : '') . '>−</button>';
+        echo '<button type="button" class="stepper-btn" onclick="adjustQty(\'' . $key . '\', -1)" id="btn-minus-' . $key . '"' . ($cur <= 0 ? ' disabled' : '') . '>−</button>';
         echo '<span class="stepper-input" id="display-' . $key . '">' . $cur . '</span>';
         echo '<input type="hidden" name="' . $key . '" id="' . $key . '" value="' . $cur . '">';
-        echo '<button type="button" class="stepper-btn" onclick="adjustQty(\''. $key .'\', 1)" id="btn-plus-' . $key . '"' . ($cur >= 3 ? ' disabled' : '') . '>+</button>';
+        echo '<button type="button" class="stepper-btn" onclick="adjustQty(\'' . $key . '\', 1)" id="btn-plus-' . $key . '"' . ($cur >= 3 ? ' disabled' : '') . '>+</button>';
         echo '</div>';
         echo '<small style="color:var(--text-muted); font-size:0.78rem; margin-top:0.35rem; display:block;">Max 3 per style · Combined total max 4</small>';
-        
     } else {
         $placeholder = $config['placeholder'] ?? 'Enter ' . $config['label'];
         $type = $config['type'];
@@ -314,7 +316,7 @@ function render_field_input($key, $config, $errors) {
         }
         echo '<input type="' . $type . '" id="' . $key . '" name="' . $key . '" class="form-control" placeholder="' . htmlspecialchars($placeholder) . '" value="' . $value . '" ' . ($config['required'] ? 'required' : '') . ' ' . $extra . '>';
     }
-    
+
     if ($has_error) {
         echo '<small style="color:var(--danger); font-size:0.8rem; margin-top:0.25rem; display:block;">' . htmlspecialchars($errors[$key]) . '</small>';
     }
@@ -345,7 +347,7 @@ function render_field_input($key, $config, $errors) {
 <?php
 // Shared public header with back-to-home link
 define('PUBLIC_ROOT', '/aries_jersey/');
-define('ADMIN_URL',   '/aries_jersey/admin/login.php');
+define('ADMIN_URL', '/aries_jersey/admin/login.php');
 $back_url   = '/aries_jersey/';
 $back_label = '← Home';
 require_once __DIR__ . '/includes/public_header.php';
@@ -366,17 +368,17 @@ require_once __DIR__ . '/includes/public_header.php';
             <div class="step-indicator active" id="ind-1">1</div>
             
             <!-- Step 2 Indicator (Optional) -->
-            <?php if ($has_step2): ?>
+            <?php if ($has_step2) : ?>
                 <div class="step-indicator" id="ind-2">2</div>
             <?php endif; ?>
             
             <!-- Step 3 Indicator (Optional) -->
-            <?php if ($has_step3): ?>
+            <?php if ($has_step3) : ?>
                 <div class="step-indicator" id="ind-3"><?php echo $has_step2 ? '3' : '2'; ?></div>
             <?php endif; ?>
         </div>
 
-        <?php if (!empty($errors['global'])): ?>
+        <?php if (!empty($errors['global'])) : ?>
             <div class="alert alert-danger"><?php echo htmlspecialchars($errors['global']); ?></div>
         <?php endif; ?>
 
@@ -389,26 +391,26 @@ require_once __DIR__ . '/includes/public_header.php';
                 <div class="form-group">
                     <label class="form-label" for="player_name">Full Player Name <span style="color:var(--primary);">*</span></label>
                     <input type="text" id="player_name" name="player_name" class="form-control" placeholder="Enter your full name" required value="<?php echo isset($_POST['player_name']) ? htmlspecialchars($_POST['player_name']) : ''; ?>" autocomplete="name" inputmode="text">
-                    <?php if (isset($errors['player_name'])): ?>
+                    <?php if (isset($errors['player_name'])) : ?>
                         <small style="color:var(--danger); font-size:0.8rem; margin-top:0.25rem; display:block;"><?php echo htmlspecialchars($errors['player_name']); ?></small>
                     <?php endif; ?>
                 </div>
 
                 <div class="form-actions align-right">
-                    <?php if ($has_step2 || $has_step3): ?>
+                    <?php if ($has_step2 || $has_step3) : ?>
                         <button type="button" class="btn btn-primary" onclick="nextStep(1)">Continue</button>
-                    <?php else: ?>
+                    <?php else : ?>
                         <button type="submit" class="btn btn-primary">Submit Registration</button>
                     <?php endif; ?>
                 </div>
             </div>
 
             <!-- STEP 2: Personal Details (Optional) -->
-            <?php if ($has_step2): ?>
+            <?php if ($has_step2) : ?>
                 <div class="form-step" id="step-2">
                     <h2 class="step-title">Step 2: Contact & Identification</h2>
                     
-                    <?php 
+                    <?php
                     foreach ($step2_fields as $key => $config) {
                         render_field_input($key, $config, $errors);
                     }
@@ -416,9 +418,9 @@ require_once __DIR__ . '/includes/public_header.php';
 
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" onclick="prevStep(2)">Back</button>
-                        <?php if ($has_step3): ?>
+                        <?php if ($has_step3) : ?>
                             <button type="button" class="btn btn-primary" onclick="nextStep(2)">Continue</button>
-                        <?php else: ?>
+                        <?php else : ?>
                             <button type="submit" class="btn btn-primary">Submit Registration</button>
                         <?php endif; ?>
                     </div>
@@ -426,7 +428,7 @@ require_once __DIR__ . '/includes/public_header.php';
             <?php endif; ?>
 
             <!-- STEP 3: Kit Sizes & Customization -->
-            <?php if ($has_step3): ?>
+            <?php if ($has_step3) : ?>
                 <div class="form-step" id="step-3">
                     <h2 class="step-title">Step 3: Kit Details &amp; Printing</h2>
 
@@ -446,42 +448,46 @@ require_once __DIR__ . '/includes/public_header.php';
                     ?>
 
                     <?php /* ── SIZE GRID: 2 columns ── */
-                    if (!empty($active_sizes)): ?>
+                    if (!empty($active_sizes)) : ?>
                     <div class="kit-section-label">Jersey &amp; Kit Sizes</div>
                     <div class="kit-grid-2">
-                        <?php foreach ($size_keys as $k):
-                            if (!isset($step3_fields[$k])) continue;
+                        <?php foreach ($size_keys as $k) :
+                            if (!isset($step3_fields[$k])) {
+                                continue;
+                            }
                             render_field_input($k, $step3_fields[$k], $errors);
                         endforeach; ?>
                     </div>
                     <?php endif; ?>
 
                     <?php /* ── BATTING HAND ── */
-                    if (isset($step3_fields[$hand_key])): ?>
+                    if (isset($step3_fields[$hand_key])) : ?>
                     <div class="kit-section-label">Batting Preference</div>
-                    <?php render_field_input($hand_key, $step3_fields[$hand_key], $errors); ?>
+                        <?php render_field_input($hand_key, $step3_fields[$hand_key], $errors); ?>
                     <?php endif; ?>
 
                     <?php /* ── SLEEVE STEPPERS: side by side ── */
-                    if (!empty($active_sleeves)): ?>
+                    if (!empty($active_sleeves)) : ?>
                     <div class="kit-section-label">Playing Jersey Quantity</div>
                     <div class="sleeve-row">
-                        <?php foreach ($sleeve_keys as $k):
-                            if (!isset($step3_fields[$k])) continue;
+                        <?php foreach ($sleeve_keys as $k) :
+                            if (!isset($step3_fields[$k])) {
+                                continue;
+                            }
                             $c = $step3_fields[$k];
                             $cur = isset($_POST[$k]) ? intval($_POST[$k]) : 0;
-                        ?>
+                            ?>
                         <div class="sleeve-cell">
                             <div class="form-label" style="margin-bottom:0.5rem;">
                                 <?php echo htmlspecialchars($c['label']); ?>
                             </div>
                             <div class="stepper-container">
-                                <button type="button" class="stepper-btn" onclick="adjustQty('<?php echo $k; ?>',-1)" id="btn-minus-<?php echo $k; ?>"<?php echo $cur<=0?' disabled':''; ?>>−</button>
+                                <button type="button" class="stepper-btn" onclick="adjustQty('<?php echo $k; ?>',-1)" id="btn-minus-<?php echo $k; ?>"<?php echo $cur <= 0 ? ' disabled' : ''; ?>>−</button>
                                 <span class="stepper-input" id="display-<?php echo $k; ?>"><?php echo $cur; ?></span>
                                 <input type="hidden" name="<?php echo $k; ?>" id="<?php echo $k; ?>" value="<?php echo $cur; ?>">
-                                <button type="button" class="stepper-btn" onclick="adjustQty('<?php echo $k; ?>',1)" id="btn-plus-<?php echo $k; ?>"<?php echo $cur>=3?' disabled':''; ?>>+</button>
+                                <button type="button" class="stepper-btn" onclick="adjustQty('<?php echo $k; ?>',1)" id="btn-plus-<?php echo $k; ?>"<?php echo $cur >= 3 ? ' disabled' : ''; ?>>+</button>
                             </div>
-                            <?php if (isset($errors[$k])): ?>
+                            <?php if (isset($errors[$k])) : ?>
                                 <small style="color:var(--danger);font-size:0.78rem;display:block;margin-top:0.25rem;"><?php echo htmlspecialchars($errors[$k]); ?></small>
                             <?php endif; ?>
                         </div>
@@ -491,36 +497,41 @@ require_once __DIR__ . '/includes/public_header.php';
                     <?php endif; ?>
 
                     <?php /* ── JERSEY NAME ── */
-                    if (isset($step3_fields[$jname_key])): ?>
+                    if (isset($step3_fields[$jname_key])) : ?>
                     <div class="kit-section-label">Jersey Printing</div>
-                    <?php render_field_input($jname_key, $step3_fields[$jname_key], $errors); ?>
+                        <?php render_field_input($jname_key, $step3_fields[$jname_key], $errors); ?>
                     <?php endif; ?>
 
                     <?php /* ── JERSEY NUMBER PRIORITY ── */
-                    if (!empty($active_jnums)): ?>
+                    if (!empty($active_jnums)) : ?>
                     <div class="form-group" style="margin-top:0.25rem;">
                         <label class="form-label">Jersey Number
-                            <?php if (isset($step3_fields['jersey_number_opt1']['required']) && $step3_fields['jersey_number_opt1']['required']): ?>
+                            <?php if (isset($step3_fields['jersey_number_opt1']['required']) && $step3_fields['jersey_number_opt1']['required']) : ?>
                                 <span style="color:var(--primary);">*</span>
                             <?php endif; ?>
                             <span style="font-weight:400;color:var(--text-muted);font-size:0.75rem;text-transform:none;letter-spacing:0;"> 0–99 · no duplicates</span>
                         </label>
                         <div class="jersey-number-grid">
-                            <?php foreach ($jnum_keys as $i => $opt_key):
-                                if (!isset($step3_fields[$opt_key])) continue;
+                            <?php foreach ($jnum_keys as $i => $opt_key) :
+                                if (!isset($step3_fields[$opt_key])) {
+                                    continue;
+                                }
                                 $opt_val = isset($_POST[$opt_key]) ? htmlspecialchars($_POST[$opt_key]) : '';
                                 $has_opt_err = isset($errors[$opt_key]);
-                            ?>
+                                ?>
                             <div>
                                 <label style="display:block;font-size:0.75rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;margin-bottom:0.35rem;">
-                                    <?php echo $jnum_labels[$i]; if($i===0) echo ' <span style="color:var(--primary)">*</span>'; ?>
+                                    <?php echo $jnum_labels[$i];
+                                    if ($i === 0) {
+                                        echo ' <span style="color:var(--primary)">*</span>';
+                                    } ?>
                                 </label>
                                 <input type="number" id="<?php echo $opt_key; ?>" name="<?php echo $opt_key; ?>"
-                                    class="form-control<?php echo $has_opt_err?' invalid':''; ?>"
+                                    class="form-control<?php echo $has_opt_err ? ' invalid' : ''; ?>"
                                     inputmode="numeric" min="0" max="99" placeholder="0–99"
                                     value="<?php echo $opt_val; ?>" autocomplete="off"
-                                    <?php echo ($i===0 && ($step3_fields[$opt_key]['required']??false)) ? 'required' : ''; ?>>
-                                <?php if ($has_opt_err): ?>
+                                    <?php echo ($i === 0 && ($step3_fields[$opt_key]['required'] ?? false)) ? 'required' : ''; ?>>
+                                <?php if ($has_opt_err) : ?>
                                     <small style="color:var(--danger);font-size:0.75rem;display:block;margin-top:0.2rem;"><?php echo htmlspecialchars($errors[$opt_key]); ?></small>
                                 <?php endif; ?>
                             </div>
@@ -530,8 +541,10 @@ require_once __DIR__ . '/includes/public_header.php';
                     <?php endif; ?>
 
                     <?php /* ── LEGACY FIELDS (if enabled) ── */
-                    foreach ($step3_fields as $key => $config):
-                        if (in_array($key, array_merge($size_keys,[$hand_key],$sleeve_keys,[$jname_key],$jnum_keys))) continue;
+                    foreach ($step3_fields as $key => $config) :
+                        if (in_array($key, array_merge($size_keys, [$hand_key], $sleeve_keys, [$jname_key], $jnum_keys))) {
+                            continue;
+                        }
                         render_field_input($key, $config, $errors);
                     endforeach; ?>
 
@@ -557,7 +570,8 @@ var hasStep3 = <?php echo $has_step3 ? 'true' : 'false'; ?>;
 </html>
 <?php
 // HTML Layout render functions for distinct states
-function display_error_page($title, $body) {
+function display_error_page($title, $body)
+{
     ?>
     <!DOCTYPE html>
     <html lang="en">
@@ -569,8 +583,12 @@ function display_error_page($title, $body) {
     </head>
     <body class="public-form-body">
         <?php
-        if (!defined('PUBLIC_ROOT')) define('PUBLIC_ROOT', '/aries_jersey/');
-        if (!defined('ADMIN_URL'))   define('ADMIN_URL',   '/aries_jersey/admin/login.php');
+        if (!defined('PUBLIC_ROOT')) {
+            define('PUBLIC_ROOT', '/aries_jersey/');
+        }
+        if (!defined('ADMIN_URL')) {
+            define('ADMIN_URL', '/aries_jersey/admin/login.php');
+        }
         require_once __DIR__ . '/includes/public_header.php';
         ?>
         <div class="public-form-container" style="max-width: 480px;">
@@ -589,7 +607,8 @@ function display_error_page($title, $body) {
     <?php
 }
 
-function display_closed_page($formTitle) {
+function display_closed_page($formTitle)
+{
     ?>
     <!DOCTYPE html>
     <html lang="en">
@@ -601,8 +620,12 @@ function display_closed_page($formTitle) {
     </head>
     <body class="public-form-body">
         <?php
-        if (!defined('PUBLIC_ROOT')) define('PUBLIC_ROOT', '/aries_jersey/');
-        if (!defined('ADMIN_URL'))   define('ADMIN_URL',   '/aries_jersey/admin/login.php');
+        if (!defined('PUBLIC_ROOT')) {
+            define('PUBLIC_ROOT', '/aries_jersey/');
+        }
+        if (!defined('ADMIN_URL')) {
+            define('ADMIN_URL', '/aries_jersey/admin/login.php');
+        }
         require_once __DIR__ . '/includes/public_header.php';
         ?>
         <div class="public-form-container" style="max-width: 500px;">
@@ -624,7 +647,8 @@ function display_closed_page($formTitle) {
     <?php
 }
 
-function display_success_page($formTitle, $summary) {
+function display_success_page($formTitle, $summary)
+{
     ?>
     <!DOCTYPE html>
     <html lang="en">
@@ -636,8 +660,12 @@ function display_success_page($formTitle, $summary) {
     </head>
     <body class="public-form-body">
         <?php
-        if (!defined('PUBLIC_ROOT')) define('PUBLIC_ROOT', '/aries_jersey/');
-        if (!defined('ADMIN_URL'))   define('ADMIN_URL',   '/aries_jersey/admin/login.php');
+        if (!defined('PUBLIC_ROOT')) {
+            define('PUBLIC_ROOT', '/aries_jersey/');
+        }
+        if (!defined('ADMIN_URL')) {
+            define('ADMIN_URL', '/aries_jersey/admin/login.php');
+        }
         require_once __DIR__ . '/includes/public_header.php';
         ?>
         <div class="public-form-container" style="max-width: 540px;">
@@ -654,7 +682,7 @@ function display_success_page($formTitle, $summary) {
                     Your kit and uniform details have been registered in the database. Below is your printing confirmation summary:
                 </p>
 
-                <?php if ($summary): ?>
+                <?php if ($summary) : ?>
                     <div style="background: rgba(30, 58, 101, 0.4); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.25rem 1.5rem; margin-bottom: 1.5rem;">
                         <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 0.75rem; font-size: 0.95rem;">
                             <div style="color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.8rem;">Player Name:</div>
@@ -663,31 +691,35 @@ function display_success_page($formTitle, $summary) {
                             <div style="color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.8rem;">Team:</div>
                             <div style="font-weight: 700; color: var(--accent-blue);">Kollam Sailors</div>
                             
-                            <?php if (!empty($summary['jersey_name'])): ?>
+                            <?php if (!empty($summary['jersey_name'])) : ?>
                                 <div style="color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.8rem;">Jersey Name:</div>
                                 <div style="font-weight: 800; font-family: monospace; letter-spacing: 0.05em; color: var(--primary);"><?php echo htmlspecialchars($summary['jersey_name']); ?></div>
                             <?php endif; ?>
                             
-                            <?php if (!empty($summary['jersey_number_opt1'])): ?>
+                            <?php if (!empty($summary['jersey_number_opt1'])) : ?>
                                 <div style="color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.8rem;">Jersey #1 (Priority):</div>
                                 <div style="font-weight: 800; font-family: monospace; font-size: 1.1rem; color: var(--accent-yellow);"><?php echo htmlspecialchars($summary['jersey_number_opt1']); ?></div>
                             <?php endif; ?>
-                            <?php if (!empty($summary['jersey_number_opt2'])): ?>
+                            <?php if (!empty($summary['jersey_number_opt2'])) : ?>
                                 <div style="color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.8rem;">Jersey #2 (Alt):</div>
                                 <div style="font-weight: 800; font-family: monospace; font-size: 1.1rem; color: var(--accent-yellow); opacity:.7;"><?php echo htmlspecialchars($summary['jersey_number_opt2']); ?></div>
                             <?php endif; ?>
-                            <?php if (!empty($summary['jersey_number_opt3'])): ?>
+                            <?php if (!empty($summary['jersey_number_opt3'])) : ?>
                                 <div style="color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.8rem;">Jersey #3 (Alt):</div>
                                 <div style="font-weight: 800; font-family: monospace; font-size: 1.1rem; color: var(--accent-yellow); opacity:.5;"><?php echo htmlspecialchars($summary['jersey_number_opt3']); ?></div>
                             <?php endif; ?>
                             
-                            <?php if (($summary['half_sleeve_qty'] ?? 0) > 0 || ($summary['full_sleeve_qty'] ?? 0) > 0): ?>
+                            <?php if (($summary['half_sleeve_qty'] ?? 0) > 0 || ($summary['full_sleeve_qty'] ?? 0) > 0) : ?>
                                 <div style="color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.8rem;">Playing Jerseys:</div>
                                 <div style="font-weight: 700; color: var(--text-primary);">
                                     <?php
                                     $parts = [];
-                                    if (($summary['half_sleeve_qty'] ?? 0) > 0) $parts[] = $summary['half_sleeve_qty'] . '× Half Sleeve';
-                                    if (($summary['full_sleeve_qty'] ?? 0) > 0) $parts[] = $summary['full_sleeve_qty'] . '× Full Sleeve';
+                                    if (($summary['half_sleeve_qty'] ?? 0) > 0) {
+                                        $parts[] = $summary['half_sleeve_qty'] . '× Half Sleeve';
+                                    }
+                                    if (($summary['full_sleeve_qty'] ?? 0) > 0) {
+                                        $parts[] = $summary['full_sleeve_qty'] . '× Full Sleeve';
+                                    }
                                     echo implode(', ', $parts);
                                     ?>
                                 </div>

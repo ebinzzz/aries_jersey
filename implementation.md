@@ -11,7 +11,7 @@ A procedural PHP + MySQL player kit registration system. Admins can create multi
 
 Since budget shared hosting (like InfinityFree) does not provide SSH/command-line access to run standard SQL commands, this project comes with a built-in **Web Migration Tracker and Setup Wizard**:
 
-1. **DB Configuration**: Edit `includes/db_config.php` and configure your database credentials (DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT).
+1. **DB Configuration**: Copy `.env.example` to `.env` and fill in your database credentials. If no `.env` file is present, the app will fallback to the hardcoded defaults in `includes/db_config.php`.
 2. **Access Installer**: Visit `/admin/migrations.php` in your browser.
 3. **Initialize Database**:
    - If the database doesn't exist, the wizard will offer to create it with one click.
@@ -23,6 +23,22 @@ Since budget shared hosting (like InfinityFree) does not provide SSH/command-lin
 5. **Alternative CLI Setup**: If you prefer CLI setup, you can import `database.sql` directly:
    
        mysql -u root -p < database.sql
+
+## Automated Deployment (GitHub Actions to InfinityFree)
+
+This project includes a fully automated deployment workflow using GitHub Actions. Pushes to the `main` branch trigger a workflow that lint-checks the codebase and deploys the files to InfinityFree via secure FTP.
+
+### How it works:
+1. **Quality Check**: The workflow checks out the repository, installs PHP, and lints all PHP files to verify there are no syntax errors.
+2. **FTP Sync**: It automatically syncs only the production files to the InfinityFree server (excluding `.git`, local `.env`, raw databases, and large design assets like videos).
+
+### How to set it up:
+1. Go to your GitHub repository.
+2. Navigate to **Settings** > **Secrets and variables** > **Actions**.
+3. Under **Repository secrets**, click **New repository secret** and add:
+   - `FTP_USERNAME`: Your InfinityFree FTP/Hosting Username (e.g., `if0_3821039`)
+   - `FTP_PASSWORD`: Your InfinityFree FTP/Hosting Password (found in your InfinityFree client area)
+4. When you push to the `main` branch, GitHub Actions will automatically deploy your code to the InfinityFree server.
 
 ## Branding & Styling Theme (Kollam Sailors)
 

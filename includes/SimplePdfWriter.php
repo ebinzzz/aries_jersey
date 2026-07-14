@@ -1,7 +1,9 @@
 <?php
+
 // includes/SimplePdfWriter.php
 
-class SimplePdfWriter {
+class SimplePdfWriter
+{
     private $title;
     private $headers = [];
     private $rows = [];
@@ -16,31 +18,37 @@ class SimplePdfWriter {
     private $pageWidth  = 842;
     private $pageHeight = 595;
 
-    public function __construct($title, $fileName = 'export.pdf') {
+    public function __construct($title, $fileName = 'export.pdf')
+    {
         $this->title    = $title;
         $this->fileName = $fileName;
     }
 
-    public function setHeaders(array $headers) {
+    public function setHeaders(array $headers)
+    {
         $this->headers = $headers;
     }
 
-    public function addRow(array $row) {
+    public function addRow(array $row)
+    {
         $this->rows[] = $row;
     }
 
     /** Compile PDF and stream download (attachment) */
-    public function download() {
+    public function download()
+    {
         $this->stream('attachment');
     }
 
     /** Compile PDF and render inline in browser */
-    public function inline() {
+    public function inline()
+    {
         $this->stream('inline');
     }
 
     /** Internal: stream PDF with given disposition */
-    private function stream($disposition = 'attachment') {
+    private function stream($disposition = 'attachment')
+    {
         $pdfData = $this->buildPdf();
         header('Content-Type: application/pdf');
         header('Content-Disposition: ' . $disposition . '; filename="' . $this->fileName . '"');
@@ -51,7 +59,8 @@ class SimplePdfWriter {
     }
 
     // ── Abbreviation map for long header labels ─────────────────────────
-    private function abbreviateHeader($label) {
+    private function abbreviateHeader($label)
+    {
         $map = [
             'Upper Jersey Size'         => 'Upper Jersey',
             'Lower Jersey Size'         => 'Lower Jersey',
@@ -77,13 +86,15 @@ class SimplePdfWriter {
     }
 
     /** Truncate cell value to a max char count */
-    private function truncate($text, $max = 12) {
+    private function truncate($text, $max = 12)
+    {
         $text = (string)$text;
         return mb_strlen($text) > $max ? mb_substr($text, 0, $max - 1) . '…' : $text;
     }
 
     /** Main PDF assembler */
-    private function buildPdf() {
+    private function buildPdf()
+    {
         $this->buffer = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
 
         // Object 1: Catalog
@@ -117,8 +128,8 @@ class SimplePdfWriter {
         $colW       = $usableW / max(1, $numCols);
 
         // Font sizes scale down when many columns
-        $hFontSz    = max(6, min(8,  floor(55 / max(1, $numCols))));
-        $dFontSz    = max(6, min(8,  floor(55 / max(1, $numCols))));
+        $hFontSz    = max(6, min(8, floor(55 / max(1, $numCols))));
+        $dFontSz    = max(6, min(8, floor(55 / max(1, $numCols))));
 
         // Rows per page (title only on page 1)
         $usableHPage1 = $H - $tm - $bm - $titleH - $hdrH;
@@ -134,7 +145,9 @@ class SimplePdfWriter {
         while (!empty($remaining)) {
             $pages[] = array_splice($remaining, 0, $rppN);
         }
-        if (empty($pages)) $pages = [[]];
+        if (empty($pages)) {
+            $pages = [[]];
+        }
 
         $totalPages = count($pages);
         $nextObjId  = 5;
@@ -259,21 +272,25 @@ class SimplePdfWriter {
         return $this->buffer;
     }
 
-    private function startObject($id) {
+    private function startObject($id)
+    {
         $this->offsets[$id] = strlen($this->buffer);
         $this->buffer .= "$id 0 obj\n";
     }
 
-    private function endObject() {
+    private function endObject()
+    {
         $this->buffer .= "endobj\n";
     }
 
-    private function write($data) {
+    private function write($data)
+    {
         $this->buffer .= $data . "\n";
     }
 
     /** Escape special PDF string characters */
-    private function escapeText($text) {
+    private function escapeText($text)
+    {
         $text = str_replace(['\\', '(', ')'], ['\\\\', '\\(', '\\)'], (string)$text);
         return preg_replace('/[^\x20-\x7E]/', ' ', $text);
     }

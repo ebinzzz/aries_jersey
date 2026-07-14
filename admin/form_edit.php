@@ -43,7 +43,7 @@ if ($is_edit) {
         exit;
     }
     $stmt->close();
-    
+
     // Fetch configs
     $stmt = $db->prepare("SELECT * FROM `form_field_configs` WHERE `form_id` = ?");
     $stmt->bind_param("i", $id);
@@ -70,14 +70,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $form_title = trim($_POST['title'] ?? '');
         $form_slug = trim($_POST['slug'] ?? '');
         $form_status = $_POST['status'] ?? 'open';
-        
+
         // Generate slug if empty
         if (empty($form_slug)) {
             $form_slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $form_title), '-'));
         } else {
             $form_slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $form_slug), '-'));
         }
-        
+
         if (empty($form_title)) {
             $message = "Form Title is required.";
             $message_type = "danger";
@@ -92,14 +92,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $stmt->execute();
             $slug_check_res = $stmt->get_result();
-            
+
             if ($slug_check_res && $slug_check_res->num_rows > 0) {
                 $message = "A form with this slug or URL already exists. Please choose a different title or slug.";
                 $message_type = "danger";
                 $stmt->close();
             } else {
                 $stmt->close();
-                
+
                 $db->begin_transaction();
                 try {
                     if ($is_edit) {
@@ -115,26 +115,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $form_id = $stmt->insert_id;
                         $stmt->close();
                     }
-                    
+
                     // Clear old field configs
                     $stmt = $db->prepare("DELETE FROM `form_field_configs` WHERE `form_id` = ?");
                     $stmt->bind_param("i", $form_id);
                     $stmt->execute();
                     $stmt->close();
-                    
+
                     // Save new configs
                     $stmt = $db->prepare("INSERT INTO `form_field_configs` (`form_id`, `field_key`, `is_enabled`, `is_required`) VALUES (?, ?, ?, ?)");
                     foreach ($catalog as $field) {
                         $fkey = $field['field_key'];
                         $is_enabled = isset($_POST['fields'][$fkey]['enabled']) ? 1 : 0;
                         $is_required = isset($_POST['fields'][$fkey]['required']) ? 1 : 0;
-                        
+
                         // Force required to be 0 if not enabled
-                        if (!$is_enabled) $is_required = 0;
-                        
+                        if (!$is_enabled) {
+                            $is_required = 0;
+                        }
+
                         $stmt->bind_param("isii", $form_id, $fkey, $is_enabled, $is_required);
                         $stmt->execute();
-                        
+
                         // Update local configs state
                         $field_configs[$fkey] = [
                             'enabled' => $is_enabled == 1,
@@ -142,9 +144,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ];
                     }
                     $stmt->close();
-                    
+
                     $db->commit();
-                    
+
                     if ($is_edit) {
                         $message = "Form updated successfully!";
                     } else {
@@ -187,7 +189,7 @@ $csrf_token = generate_csrf_token();
             </div>
         </div>
 
-        <?php if (!empty($message)): ?>
+        <?php if (!empty($message)) : ?>
             <div class="alert alert-<?php echo $message_type; ?>">
                 <?php echo htmlspecialchars($message); ?>
             </div>
@@ -257,17 +259,17 @@ $csrf_token = generate_csrf_token();
                                     </tr>
                                     
                                     <!-- Dynamic fields -->
-                                    <?php foreach ($catalog as $field): 
+                                    <?php foreach ($catalog as $field) :
                                         $fkey = $field['field_key'];
                                         $enabled = isset($field_configs[$fkey]['enabled']) && $field_configs[$fkey]['enabled'];
                                         $required = isset($field_configs[$fkey]['required']) && $field_configs[$fkey]['required'];
-                                    ?>
+                                        ?>
                                         <tr>
                                             <td>
                                                 <strong><?php echo htmlspecialchars($field['field_label']); ?></strong>
                                                 <div style="font-size: 0.75rem; color: var(--text-muted);">
                                                     Type: <?php echo htmlspecialchars(ucfirst($field['field_type'])); ?> 
-                                                    <?php echo $field['options_list'] ? '('.htmlspecialchars($field['options_list']).')' : ''; ?>
+                                                    <?php echo $field['options_list'] ? '(' . htmlspecialchars($field['options_list']) . ')' : ''; ?>
                                                 </div>
                                             </td>
                                             <td>
@@ -321,7 +323,7 @@ $csrf_token = generate_csrf_token();
 
 <script>
 function generateSlug(text) {
-    <?php if ($is_edit): ?>
+    <?php if ($is_edit) : ?>
         // If editing, we do not want to auto-overwrite the slug unless they clear it first
         var slugInput = document.getElementById('slug');
         if (slugInput.dataset.manual === 'true') return;

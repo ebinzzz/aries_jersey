@@ -1,11 +1,13 @@
 <?php
+
 // includes/form_helpers.php
 require_once __DIR__ . '/db_config.php';
 
 /**
  * Fetch enabled fields config for a form
  */
-function get_form_fields_config($form_id) {
+function get_form_fields_config($form_id)
+{
     try {
         $db = get_db_connection();
         $stmt = $db->prepare("
@@ -39,7 +41,8 @@ function get_form_fields_config($form_id) {
 /**
  * Clean and format submitted inputs based on form configurations
  */
-function sanitize_form_input($key, $val) {
+function sanitize_form_input($key, $val)
+{
     $val = trim($val);
     if ($key === 'jersey_name') {
         // Auto uppercase jersey name for sports print standard

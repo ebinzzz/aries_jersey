@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message_type = "danger";
     } else {
         $action = $_POST['action'] ?? '';
-        
+
         if ($action === 'create') {
             $name = trim($_POST['team_name'] ?? '');
             if (empty($name)) {
@@ -41,14 +41,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } elseif ($action === 'delete') {
             $team_id = intval($_POST['team_id'] ?? 0);
-            
+
             // Check references first to avoid foreign key violations
             $check = $db->prepare("SELECT COUNT(*) as count FROM `registrations` WHERE `team_id` = ?");
             $check->bind_param("i", $team_id);
             $check->execute();
             $count = $check->get_result()->fetch_assoc()['count'];
             $check->close();
-            
+
             if ($count > 0) {
                 $message = "Cannot delete this team. It is currently referenced in " . $count . " player registration(s).";
                 $message_type = "danger";
@@ -103,7 +103,7 @@ $csrf_token = generate_csrf_token();
             </div>
         </div>
 
-        <?php if (!empty($message)): ?>
+        <?php if (!empty($message)) : ?>
             <div class="alert alert-<?php echo $message_type; ?>">
                 <?php echo htmlspecialchars($message); ?>
             </div>
@@ -139,7 +139,7 @@ $csrf_token = generate_csrf_token();
                     <span class="badge badge-success"><?php echo count($teams); ?> teams</span>
                 </div>
 
-                <?php if (count($teams) > 0): ?>
+                <?php if (count($teams) > 0) : ?>
                     <div class="table-responsive">
                         <table class="table">
                             <thead>
@@ -151,7 +151,7 @@ $csrf_token = generate_csrf_token();
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($teams as $team): ?>
+                                <?php foreach ($teams as $team) : ?>
                                     <tr>
                                         <td style="color: var(--text-muted); font-size: 0.85rem; font-family: monospace;">
                                             #<?php echo $team['id']; ?>
@@ -175,7 +175,7 @@ $csrf_token = generate_csrf_token();
                             </tbody>
                         </table>
                     </div>
-                <?php else: ?>
+                <?php else : ?>
                     <div style="text-align: center; padding: 3rem 0; color: var(--text-secondary);">
                         <p style="font-weight: 500;">No teams registered yet.</p>
                         <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">Use the form on the left to register a team.</p>

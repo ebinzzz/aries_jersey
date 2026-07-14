@@ -16,10 +16,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: migrations.php");
         exit;
     }
-    
+
     $username = trim($_POST['username'] ?? '');
     $password = trim($_POST['password'] ?? '');
-    
+
     if (empty($username) || empty($password)) {
         $error = "Please fill in all fields.";
     } else {
@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("s", $username);
             $stmt->execute();
             $result = $stmt->get_result();
-            
+
             if ($result && $result->num_rows > 0) {
                 $user = $result->fetch_assoc();
                 if (password_verify($password, $user['password'])) {
@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['admin_logged_in'] = true;
                     $_SESSION['admin_id'] = $user['id'];
                     $_SESSION['admin_username'] = $user['username'];
-                    
+
                     header("Location: index.php");
                     exit;
                 }
@@ -69,14 +69,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.25rem;">Sign in to manage registrations & forms</p>
     </div>
 
-    <?php if (!$admins_exist): ?>
+    <?php if (!$admins_exist) : ?>
         <div class="alert alert-warning">
             <strong>System Uninitialized:</strong> No admin users found. Please visit the migration tracker to setup the system.
             <a href="migrations.php" class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 1rem; display: block; text-align: center;">Go to Installation</a>
         </div>
     <?php endif; ?>
 
-    <?php if (!empty($error)): ?>
+    <?php if (!empty($error)) : ?>
         <div class="alert alert-danger">
             <?php echo htmlspecialchars($error); ?>
         </div>

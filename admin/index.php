@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message_type = "danger";
     } else {
         $action = $_POST['action'] ?? '';
-        
+
         if ($action === 'delete') {
             $form_id = intval($_POST['form_id'] ?? 0);
             $stmt = $db->prepare("DELETE FROM `forms` WHERE `id` = ?");
@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $form_id = intval($_POST['form_id'] ?? 0);
             $current_status = $_POST['status'] ?? 'open';
             $new_status = $current_status === 'open' ? 'closed' : 'open';
-            
+
             $stmt = $db->prepare("UPDATE `forms` SET `status` = ? WHERE `id` = ?");
             $stmt->bind_param("si", $new_status, $form_id);
             if ($stmt->execute()) {
@@ -60,16 +60,28 @@ $total_registrations = 0;
 $total_teams = 0;
 
 $res = $db->query("SELECT COUNT(*) as count FROM `forms`");
-if ($res) { $total_forms = $res->fetch_assoc()['count']; $res->free(); }
+if ($res) {
+    $total_forms = $res->fetch_assoc()['count'];
+    $res->free();
+}
 
 $res = $db->query("SELECT COUNT(*) as count FROM `forms` WHERE `status` = 'open'");
-if ($res) { $active_forms = $res->fetch_assoc()['count']; $res->free(); }
+if ($res) {
+    $active_forms = $res->fetch_assoc()['count'];
+    $res->free();
+}
 
 $res = $db->query("SELECT COUNT(*) as count FROM `registrations`");
-if ($res) { $total_registrations = $res->fetch_assoc()['count']; $res->free(); }
+if ($res) {
+    $total_registrations = $res->fetch_assoc()['count'];
+    $res->free();
+}
 
 $res = $db->query("SELECT COUNT(*) as count FROM `teams`");
-if ($res) { $total_teams = $res->fetch_assoc()['count']; $res->free(); }
+if ($res) {
+    $total_teams = $res->fetch_assoc()['count'];
+    $res->free();
+}
 
 // Fetch forms list with registration counts
 $forms = [];
@@ -123,7 +135,7 @@ $base_url = $protocol . $host . $uri . "/form.php?slug=";
             </div>
         </div>
 
-        <?php if (!empty($message)): ?>
+        <?php if (!empty($message)) : ?>
             <div class="alert alert-<?php echo $message_type; ?>">
                 <?php echo htmlspecialchars($message); ?>
             </div>
@@ -171,7 +183,7 @@ $base_url = $protocol . $host . $uri . "/form.php?slug=";
                 <span class="badge badge-success"><?php echo count($forms); ?> forms created</span>
             </div>
 
-            <?php if (count($forms) > 0): ?>
+            <?php if (count($forms) > 0) : ?>
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
@@ -185,9 +197,9 @@ $base_url = $protocol . $host . $uri . "/form.php?slug=";
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($forms as $form): 
+                            <?php foreach ($forms as $form) :
                                 $form_url = $base_url . urlencode($form['slug']);
-                            ?>
+                                ?>
                                 <tr>
                                     <td>
                                         <strong style="font-size: 1rem;"><?php echo htmlspecialchars($form['title']); ?></strong>
@@ -205,9 +217,9 @@ $base_url = $protocol . $host . $uri . "/form.php?slug=";
                                             <input type="hidden" name="status" value="<?php echo $form['status']; ?>">
                                             <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                                             
-                                            <?php if ($form['status'] === 'open'): ?>
+                                            <?php if ($form['status'] === 'open') : ?>
                                                 <button type="submit" class="badge badge-success" style="cursor: pointer; border: 1px solid rgba(16, 185, 129, 0.2);" title="Click to Close Form">Open</button>
-                                            <?php else: ?>
+                                            <?php else : ?>
                                                 <button type="submit" class="badge badge-danger" style="cursor: pointer; border: 1px solid rgba(239, 68, 68, 0.2);" title="Click to Open Form">Closed</button>
                                             <?php endif; ?>
                                         </form>
@@ -242,7 +254,7 @@ $base_url = $protocol . $host . $uri . "/form.php?slug=";
                         </tbody>
                     </table>
                 </div>
-            <?php else: ?>
+            <?php else : ?>
                 <div style="text-align: center; padding: 4rem 2rem; color: var(--text-secondary);">
                     <svg width="64" height="64" fill="none" stroke="var(--text-muted)" stroke-width="1" viewBox="0 0 24 24" style="margin-bottom: 1.5rem;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
                     <h3>No Forms Created Yet</h3>

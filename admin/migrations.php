@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/includes/auth.php';
 
 $runner = new MigrationRunner();
 
-// Enforce login if admin database/accounts already exist. 
+// Enforce login if admin database/accounts already exist.
 // This allows a seamless setup on empty DBs while protecting live databases.
 $admins_exist = any_admin_exists();
 if ($admins_exist) {
@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message_type = "danger";
     } else {
         $action = $_POST['action'] ?? '';
-        
+
         try {
             if ($action === 'create_db') {
                 $runner->createDatabase();
@@ -93,7 +93,7 @@ $csrf_token = $admins_exist ? generate_csrf_token() : '';
 </head>
 <body class="<?php echo !$admins_exist ? 'public-form-body' : ''; ?>">
 
-<?php if ($admins_exist): ?>
+<?php if ($admins_exist) : ?>
 <div class="app-container">
     <?php include '_partials/sidebar.php'; ?>
     <main class="main-content">
@@ -106,7 +106,7 @@ $csrf_token = $admins_exist ? generate_csrf_token() : '';
                 <a href="index.php" class="btn btn-secondary">Go to Dashboard</a>
             </div>
         </div>
-<?php else: ?>
+<?php else : ?>
 <div class="public-form-container" style="max-width: 800px;">
     <div class="public-form-logo">
         <img src="../assets/images/logo.png" alt="Aries Kollam Sailors Logo" style="height: 60px; width: auto; object-fit: contain;">
@@ -114,7 +114,7 @@ $csrf_token = $admins_exist ? generate_csrf_token() : '';
     </div>
 <?php endif; ?>
 
-        <?php if (!empty($message)): ?>
+        <?php if (!empty($message)) : ?>
             <div class="alert alert-<?php echo $message_type; ?>">
                 <?php echo htmlspecialchars($message); ?>
             </div>
@@ -124,11 +124,11 @@ $csrf_token = $admins_exist ? generate_csrf_token() : '';
         <div class="card" style="margin-bottom: 2rem;">
             <div class="card-header">
                 <h2>Connection Environment</h2>
-                <?php if (!$runner->isConnected()): ?>
+                <?php if (!$runner->isConnected()) : ?>
                     <span class="badge badge-danger">Offline</span>
-                <?php elseif (!$db_exists): ?>
+                <?php elseif (!$db_exists) : ?>
                     <span class="badge badge-warning">Database Missing</span>
-                <?php else: ?>
+                <?php else : ?>
                     <span class="badge badge-success">Connected</span>
                 <?php endif; ?>
             </div>
@@ -148,20 +148,20 @@ $csrf_token = $admins_exist ? generate_csrf_token() : '';
                 </div>
             </div>
 
-            <?php if ($conn_error): ?>
+            <?php if ($conn_error) : ?>
                 <div class="alert alert-danger" style="margin-top: 1rem; margin-bottom: 0;">
                     <strong>Connection Error:</strong> <?php echo htmlspecialchars($conn_error); ?>
                 </div>
             <?php endif; ?>
 
-            <?php if ($runner->isConnected() && !$db_exists): ?>
+            <?php if ($runner->isConnected() && !$db_exists) : ?>
                 <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color);">
                     <p style="color: var(--text-secondary); margin-bottom: 1rem;">
                         MySQL is accessible, but the database <strong><?php echo htmlspecialchars(DB_NAME); ?></strong> does not exist on the server. Click below to create it.
                     </p>
                     <form method="POST">
                         <input type="hidden" name="action" value="create_db">
-                        <?php if ($admins_exist): ?>
+                        <?php if ($admins_exist) : ?>
                             <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                         <?php endif; ?>
                         <button type="submit" class="btn btn-primary">Create Database "<?php echo htmlspecialchars(DB_NAME); ?>"</button>
@@ -170,7 +170,7 @@ $csrf_token = $admins_exist ? generate_csrf_token() : '';
             <?php endif; ?>
         </div>
 
-        <?php if ($db_exists): ?>
+        <?php if ($db_exists) : ?>
             <!-- Migrations Dashboard -->
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
                 <!-- Pending Migrations Panel -->
@@ -182,12 +182,12 @@ $csrf_token = $admins_exist ? generate_csrf_token() : '';
                         </span>
                     </div>
 
-                    <?php if (count($pending) > 0): ?>
+                    <?php if (count($pending) > 0) : ?>
                         <div class="alert alert-warning" style="margin-bottom: 1.5rem;">
                             You have database schema updates ready to be applied.
                         </div>
                         <ul style="list-style: none; margin-bottom: 1.5rem; padding-left: 0;">
-                            <?php foreach ($pending as $file): ?>
+                            <?php foreach ($pending as $file) : ?>
                                 <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 0.5rem;">
                                     <svg width="16" height="16" fill="none" stroke="var(--warning)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                                     <span style="font-family: monospace; font-size: 0.9rem;"><?php echo htmlspecialchars($file); ?></span>
@@ -196,12 +196,12 @@ $csrf_token = $admins_exist ? generate_csrf_token() : '';
                         </ul>
                         <form method="POST">
                             <input type="hidden" name="action" value="run_migrations">
-                            <?php if ($admins_exist): ?>
+                            <?php if ($admins_exist) : ?>
                                 <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                             <?php endif; ?>
                             <button type="submit" class="btn btn-primary" style="width: 100%;">Execute All Pending Migrations</button>
                         </form>
-                    <?php else: ?>
+                    <?php else : ?>
                         <div style="text-align: center; padding: 2rem 0; color: var(--text-secondary);">
                             <svg width="48" height="48" fill="none" stroke="var(--success)" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom: 1rem;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                             <p style="font-weight: 500;">All caught up!</p>
@@ -217,7 +217,7 @@ $csrf_token = $admins_exist ? generate_csrf_token() : '';
                         <span class="badge badge-success"><?php echo count($applied); ?> Applied</span>
                     </div>
 
-                    <?php if (count($applied) > 0): ?>
+                    <?php if (count($applied) > 0) : ?>
                         <div class="table-responsive" style="max-height: 280px; overflow-y: auto;">
                             <table class="table">
                                 <thead>
@@ -227,7 +227,7 @@ $csrf_token = $admins_exist ? generate_csrf_token() : '';
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach (array_reverse($applied) as $file): ?>
+                                    <?php foreach (array_reverse($applied) as $file) : ?>
                                         <tr>
                                             <td style="font-family: monospace; font-size: 0.85rem;"><?php echo htmlspecialchars($file); ?></td>
                                             <td><span class="badge badge-success" style="font-size: 0.7rem;">Applied</span></td>
@@ -236,7 +236,7 @@ $csrf_token = $admins_exist ? generate_csrf_token() : '';
                                 </tbody>
                             </table>
                         </div>
-                    <?php else: ?>
+                    <?php else : ?>
                         <div style="text-align: center; padding: 2rem 0; color: var(--text-secondary);">
                             <p style="font-weight: 500;">No history logged</p>
                             <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">Execute pending migrations to create logs.</p>
@@ -246,7 +246,7 @@ $csrf_token = $admins_exist ? generate_csrf_token() : '';
             </div>
 
             <!-- SQL Console (Admin Only) -->
-            <?php if ($admins_exist): ?>
+            <?php if ($admins_exist) : ?>
                 <div class="card sql-editor-container">
                     <div class="card-header">
                         <h2>Developer SQL Console</h2>
@@ -265,32 +265,32 @@ $csrf_token = $admins_exist ? generate_csrf_token() : '';
                         <button type="submit" class="btn btn-secondary">Execute Statement</button>
                     </form>
 
-                    <?php if ($query_results): ?>
+                    <?php if ($query_results) : ?>
                         <div style="margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">
                             <h3>Query Results</h3>
                             
-                            <?php if ($query_results['type'] === 'success'): ?>
+                            <?php if ($query_results['type'] === 'success') : ?>
                                 <div class="alert alert-success" style="margin-top: 1rem; margin-bottom: 0;">
                                     Success! Affected Rows: <?php echo $query_results['affected_rows']; ?>
                                 </div>
-                            <?php else: ?>
+                            <?php else : ?>
                                 <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem; margin-bottom: 0.5rem;">
                                     Returned Rows: <?php echo $query_results['num_rows']; ?>
                                 </p>
-                                <?php if (count($query_results['rows']) > 0): ?>
+                                <?php if (count($query_results['rows']) > 0) : ?>
                                     <div class="table-responsive query-results-table">
                                         <table class="table" style="font-size: 0.8rem;">
                                             <thead>
                                                 <tr>
-                                                    <?php foreach (array_keys($query_results['rows'][0]) as $col): ?>
+                                                    <?php foreach (array_keys($query_results['rows'][0]) as $col) : ?>
                                                         <th><?php echo htmlspecialchars($col); ?></th>
                                                     <?php endforeach; ?>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php foreach ($query_results['rows'] as $row): ?>
+                                                <?php foreach ($query_results['rows'] as $row) : ?>
                                                     <tr>
-                                                        <?php foreach ($row as $val): ?>
+                                                        <?php foreach ($row as $val) : ?>
                                                             <td><?php echo $val === null ? '<em>NULL</em>' : htmlspecialchars($val); ?></td>
                                                         <?php endforeach; ?>
                                                     </tr>
@@ -298,7 +298,7 @@ $csrf_token = $admins_exist ? generate_csrf_token() : '';
                                             </tbody>
                                         </table>
                                     </div>
-                                <?php else: ?>
+                                <?php else : ?>
                                     <div class="alert alert-warning" style="margin-top: 1rem;">
                                         The query returned 0 rows.
                                     </div>
@@ -310,16 +310,16 @@ $csrf_token = $admins_exist ? generate_csrf_token() : '';
             <?php endif; ?>
         <?php endif; ?>
 
-<?php if ($admins_exist): ?>
+<?php if ($admins_exist) : ?>
     </main>
 </div>
-<?php else: ?>
+<?php else : ?>
     <!-- Installer Footer -->
     <div style="text-align: center; margin-top: 2rem; font-size: 0.85rem; color: var(--text-muted);">
-        <?php if ($db_exists && count($pending) === 0): ?>
+        <?php if ($db_exists && count($pending) === 0) : ?>
             <p>Database and table structures initialized!</p>
             <a href="login.php" class="btn btn-primary" style="margin-top: 1rem; width: 100%;">Proceed to Admin Login</a>
-        <?php else: ?>
+        <?php else : ?>
             <p>Please setup the database using this wizard to begin configuring your registration system.</p>
         <?php endif; ?>
     </div>

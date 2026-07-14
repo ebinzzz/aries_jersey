@@ -1,4 +1,5 @@
 <?php
+
 /**
  * includes/public_header.php
  * Shared branded header for public-facing pages (landing + form).
@@ -41,7 +42,7 @@ $back_label  = $back_label  ?? '← Home';
 
         <!-- Right nav -->
         <nav class="pub-nav" aria-label="Site navigation">
-            <?php if ($back_url): ?>
+            <?php if ($back_url) : ?>
                 <a href="<?php echo htmlspecialchars($back_url); ?>" class="pub-nav-link"><?php echo htmlspecialchars($back_label); ?></a>
             <?php endif; ?>
             <span class="pub-badge">Sailors Jersey Portal</span>
@@ -64,7 +65,7 @@ $back_label  = $back_label  ?? '← Home';
 
     <!-- Mobile nav drawer -->
     <div class="pub-mobile-nav" id="pubMobileNav">
-        <?php if ($back_url): ?>
+        <?php if ($back_url) : ?>
             <a href="<?php echo htmlspecialchars($back_url); ?>" class="pub-mobile-link"><?php echo htmlspecialchars($back_label); ?></a>
         <?php endif; ?>
         <a href="<?php echo defined('ADMIN_URL') ? ADMIN_URL : '/aries_jersey/admin/login.php'; ?>" class="pub-mobile-link">Admin Access</a>

@@ -120,7 +120,7 @@ $csrf_token = generate_csrf_token();
             </div>
         </div>
 
-        <?php if (!empty($message)): ?>
+        <?php if (!empty($message)) : ?>
             <div class="alert alert-<?php echo $message_type; ?>">
                 <?php echo htmlspecialchars($message); ?>
             </div>
@@ -134,7 +134,7 @@ $csrf_token = generate_csrf_token();
                     <input type="text" name="search" class="form-control" placeholder="Search by Player Name, Team, Jersey Name, Mobile, or Player ID..." value="<?php echo htmlspecialchars($search); ?>">
                 </div>
                 <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem;">Search</button>
-                <?php if (!empty($search)): ?>
+                <?php if (!empty($search)) : ?>
                     <a href="registrations.php?form_id=<?php echo $form_id; ?>" class="btn btn-secondary" style="padding: 0.75rem 1.5rem;">Clear</a>
                 <?php endif; ?>
             </form>
@@ -147,7 +147,7 @@ $csrf_token = generate_csrf_token();
                 <span class="badge badge-success"><?php echo count($registrations); ?> records found</span>
             </div>
 
-            <?php if (count($registrations) > 0): ?>
+            <?php if (count($registrations) > 0) : ?>
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
@@ -155,7 +155,7 @@ $csrf_token = generate_csrf_token();
                                 <th>Player Name</th>
                                 
                                 <!-- Dynamic columns for active fields -->
-                                <?php foreach ($fields_config as $key => $config): ?>
+                                <?php foreach ($fields_config as $key => $config) : ?>
                                     <th><?php echo htmlspecialchars($config['label']); ?></th>
                                 <?php endforeach; ?>
                                 
@@ -164,7 +164,7 @@ $csrf_token = generate_csrf_token();
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($registrations as $reg): ?>
+                            <?php foreach ($registrations as $reg) : ?>
                                 <tr>
                                     <td>
                                         <strong><?php echo htmlspecialchars($reg['player_name']); ?></strong>
@@ -173,7 +173,7 @@ $csrf_token = generate_csrf_token();
                                     <!-- Dynamic fields data -->
                                     <?php
                                     $qty_display_keys = ['half_sleeve_qty', 'full_sleeve_qty'];
-                                    foreach ($fields_config as $key => $config): ?>
+                                    foreach ($fields_config as $key => $config) : ?>
                                         <td>
                                             <?php
                                             $val = $reg[$key] ?? null;
@@ -204,7 +204,7 @@ $csrf_token = generate_csrf_token();
                         </tbody>
                     </table>
                 </div>
-            <?php else: ?>
+            <?php else : ?>
                 <div style="text-align: center; padding: 4rem 2rem; color: var(--text-secondary);">
                     <svg width="48" height="48" fill="none" stroke="var(--text-muted)" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom: 1rem;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                     <h3>No Registrations Found</h3>

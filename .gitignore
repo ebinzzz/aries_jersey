@@ -1,0 +1,10 @@
+# Ignore environment files
+.env
+
+# Composer dependencies
+vendor/
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini

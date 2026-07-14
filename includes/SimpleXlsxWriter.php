@@ -1,25 +1,30 @@
 <?php
+
 // includes/SimpleXlsxWriter.php
 
-class SimpleXlsxWriter {
+class SimpleXlsxWriter
+{
     private $rows = [];
     private $fileName;
 
-    public function __construct($fileName = 'export.xlsx') {
+    public function __construct($fileName = 'export.xlsx')
+    {
         $this->fileName = $fileName;
     }
 
     /**
      * Add a row of data
      */
-    public function addRow(array $row) {
+    public function addRow(array $row)
+    {
         $this->rows[] = $row;
     }
 
     /**
      * Add multiple rows
      */
-    public function addRows(array $rows) {
+    public function addRows(array $rows)
+    {
         foreach ($rows as $row) {
             $this->addRow($row);
         }
@@ -28,14 +33,15 @@ class SimpleXlsxWriter {
     /**
      * Generate the XLSX binary string and send download headers
      */
-    public function download() {
+    public function download()
+    {
         $xlsxData = $this->buildXlsx();
-        
+
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment; filename="' . $this->fileName . '"');
         header('Content-Length: ' . strlen($xlsxData));
         header('Cache-Control: max-age=0');
-        
+
         echo $xlsxData;
         exit;
     }
@@ -43,7 +49,8 @@ class SimpleXlsxWriter {
     /**
      * Build the OpenXML folder zip structure manually
      */
-    private function buildXlsx() {
+    private function buildXlsx()
+    {
         $zip = new SimpleZipArchive();
 
         // 1. [Content_Types].xml
@@ -89,7 +96,7 @@ class SimpleXlsxWriter {
                 $cellRef = $this->getColumnLetter($colIndex) . $rowIndex;
                 // Escape special characters for XML
                 $cleanVal = htmlspecialchars($val, ENT_QUOTES, 'UTF-8');
-                
+
                 // Determine type: numeric or inline string
                 if (is_numeric($val) && !preg_match('/^0[0-9]+/', $val)) {
                     $sheetData .= '<c r="' . $cellRef . '"><v>' . $cleanVal . '</v></c>';
@@ -114,7 +121,8 @@ class SimpleXlsxWriter {
     /**
      * Map numeric index to Excel column letter (e.g. 0 -> A, 27 -> AB)
      */
-    private function getColumnLetter($index) {
+    private function getColumnLetter($index)
+    {
         $letter = '';
         while ($index >= 0) {
             $letter = chr(($index % 26) + 65) . $letter;
@@ -129,10 +137,12 @@ class SimpleXlsxWriter {
  * Bypasses need for php-zip extension. Uses compression method 0 (store/uncompressed)
  * for standard compatibility across budget servers.
  */
-class SimpleZipArchive {
+class SimpleZipArchive
+{
     private $files = [];
 
-    public function addFile($name, $data) {
+    public function addFile($name, $data)
+    {
         $this->files[] = [
             'name' => $name,
             'data' => $data,
@@ -141,19 +151,21 @@ class SimpleZipArchive {
         ];
     }
 
-    public function getArchiveData() {
+    public function getArchiveData()
+    {
         $zip = '';
         $offset = 0;
         $cd = '';
-        
+
         foreach ($this->files as $file) {
             $nameLen = strlen($file['name']);
             $dataLen = $file['size'];
-            
+
             // Local file header: 30 bytes fixed
             // V=4: sig | v=2: ver | v=2: flag | v=2: comp | v=2: time | v=2: date
             // V=4: crc | V=4: comp_sz | V=4: uncomp_sz | v=2: name_len | v=2: extra_len
-            $lfh = pack('VvvvvvVVVvv',
+            $lfh = pack(
+                'VvvvvvVVVvv',
                 0x04034b50, // local file header signature
                 20,         // version needed to extract
                 0,          // general purpose bit flag
@@ -166,15 +178,16 @@ class SimpleZipArchive {
                 $nameLen,   // file name length
                 0           // extra field length
             ) . $file['name'];
-            
+
             $zip .= $lfh . $file['data'];
-            
+
             // Central directory header: 46 bytes fixed
             // V=4: sig | v=2: ver_by | v=2: ver_need | v=2: flag | v=2: comp
             // v=2: time | v=2: date | V=4: crc | V=4: comp_sz | V=4: uncomp_sz
             // v=2: name_len | v=2: extra_len | v=2: comment_len
             // v=2: disk_start | v=2: int_attr | V=4: ext_attr | V=4: offset
-            $cdh = pack('VvvvvvvVVVvvvvvVV',
+            $cdh = pack(
+                'VvvvvvvVVVvvvvvVV',
                 0x02014b50, // central directory signature
                 0x0014,     // version made by
                 0x0014,     // version needed to extract
@@ -193,15 +206,16 @@ class SimpleZipArchive {
                 0,          // external file attributes (4 bytes)
                 $offset     // relative offset of local header
             ) . $file['name'];
-            
+
             $cd .= $cdh;
             $offset += strlen($lfh) + $dataLen;
         }
-        
+
         $cdLen = strlen($cd);
-        
+
         // End of central directory record
-        $eocd = pack('VvvvvVVv',
+        $eocd = pack(
+            'VvvvvVVv',
             0x06054b50, // EOCD signature
             0,          // number of this disk
             0,          // disk with start of central directory
@@ -211,7 +225,7 @@ class SimpleZipArchive {
             $offset,    // offset of start of central directory
             0           // comment length
         );
-        
+
         return $zip . $cd . $eocd;
     }
 }

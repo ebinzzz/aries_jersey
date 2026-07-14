@@ -18,11 +18,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message_type = "danger";
     } else {
         $action = $_POST['action'] ?? '';
-        
+
         if ($action === 'create') {
             $username = trim($_POST['username'] ?? '');
             $password = trim($_POST['password'] ?? '');
-            
+
             if (empty($username) || empty($password)) {
                 $message = "All fields are required.";
                 $message_type = "danger";
@@ -31,10 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message_type = "danger";
             } else {
                 $hashed_password = password_hash($password, PASSWORD_BCRYPT);
-                
+
                 $stmt = $db->prepare("INSERT INTO `admins` (`username`, `password`) VALUES (?, ?)");
                 $stmt->bind_param("ss", $username, $hashed_password);
-                
+
                 if ($stmt->execute()) {
                     $message = "Admin user '" . htmlspecialchars($username) . "' created successfully.";
                 } else {
@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } elseif ($action === 'delete') {
             $admin_id = intval($_POST['admin_id'] ?? 0);
-            
+
             if ($admin_id === $current_admin_id) {
                 $message = "You cannot delete your own administrative account.";
                 $message_type = "danger";
@@ -58,8 +58,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Ensure we don't delete the last admin account
                 $res = $db->query("SELECT COUNT(*) as count FROM `admins`");
                 $admin_count = $res ? $res->fetch_assoc()['count'] : 0;
-                if ($res) { $res->close(); }
-                
+                if ($res) {
+                    $res->close();
+                }
+
                 if ($admin_count <= 1) {
                     $message = "Cannot delete the final administrator account on this server.";
                     $message_type = "danger";
@@ -115,7 +117,7 @@ $csrf_token = generate_csrf_token();
             </div>
         </div>
 
-        <?php if (!empty($message)): ?>
+        <?php if (!empty($message)) : ?>
             <div class="alert alert-<?php echo $message_type; ?>">
                 <?php echo htmlspecialchars($message); ?>
             </div>
@@ -166,12 +168,12 @@ $csrf_token = generate_csrf_token();
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($admins as $admin): ?>
+                            <?php foreach ($admins as $admin) : ?>
                                 <tr>
                                     <td>
                                         <div style="display: flex; align-items: center; gap: 0.5rem;">
                                             <span style="font-weight: 700;"><?php echo htmlspecialchars($admin['username']); ?></span>
-                                            <?php if ($admin['id'] === $current_admin_id): ?>
+                                            <?php if ($admin['id'] === $current_admin_id) : ?>
                                                 <span class="badge badge-warning" style="font-size: 0.65rem;">You</span>
                                             <?php endif; ?>
                                         </div>
@@ -180,14 +182,14 @@ $csrf_token = generate_csrf_token();
                                         <?php echo date('M d, Y', strtotime($admin['created_at'])); ?>
                                     </td>
                                     <td style="text-align: right;">
-                                        <?php if ($admin['id'] !== $current_admin_id): ?>
+                                        <?php if ($admin['id'] !== $current_admin_id) : ?>
                                             <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this admin account?');">
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="admin_id" value="<?php echo $admin['id']; ?>">
                                                 <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
                                                 <button type="submit" class="btn btn-danger btn-sm">Delete</button>
                                             </form>
-                                        <?php else: ?>
+                                        <?php else : ?>
                                             <button class="btn btn-secondary btn-sm" disabled title="Cannot delete your active account">Locked</button>
                                         <?php endif; ?>
                                     </td>

@@ -1,9 +1,11 @@
 <?php
+
 /**
  * includes/public_footer.php
  * Shared branded footer for public-facing pages.
  * Usage: require_once __DIR__ . '/../includes/public_footer.php';
  */
+
 ?>
 <footer class="pub-footer">
     <div class="pub-footer-inner">
