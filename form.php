@@ -40,6 +40,54 @@ if ($form['status'] === 'closed' && !isset($_GET['success'])) {
 // Fetch dynamic form fields config
 $fields_config = get_form_fields_config($form['id']);
 
+// Check for lookup or edit parameters
+$lookup_phone = trim($_GET['lookup_phone'] ?? '');
+$edit_id = intval($_GET['edit_id'] ?? 0);
+$phone = trim($_GET['phone'] ?? '');
+$editing_registration = null;
+$lookup_results = null;
+$lookup_error = '';
+
+if (!empty($lookup_phone)) {
+    // Search registrations under this form and mobile_number
+    $stmt = $db->prepare("SELECT * FROM `registrations` WHERE `form_id` = ? AND `mobile_number` = ? ORDER BY `submitted_at` DESC");
+    $stmt->bind_param("is", $form['id'], $lookup_phone);
+    $stmt->execute();
+    $reg_res = $stmt->get_result();
+    $registrations = [];
+    while ($row = $reg_res->fetch_assoc()) {
+        $registrations[] = $row;
+    }
+    $stmt->close();
+
+    if (count($registrations) === 0) {
+        $lookup_error = "No registration found with mobile number '" . htmlspecialchars($lookup_phone) . "'.";
+    } elseif (count($registrations) === 1) {
+        // Redirect to edit mode for this registration
+        header("Location: form.php?slug=" . urlencode($slug) . "&edit_id=" . $registrations[0]['id'] . "&phone=" . urlencode($lookup_phone));
+        exit;
+    } else {
+        // Multiple results
+        $lookup_results = $registrations;
+    }
+}
+
+if ($edit_id > 0 && !empty($phone)) {
+    $stmt = $db->prepare("SELECT * FROM `registrations` WHERE `id` = ? AND `form_id` = ? AND `mobile_number` = ? LIMIT 1");
+    $stmt->bind_param("iis", $edit_id, $form['id'], $phone);
+    $stmt->execute();
+    $reg_res = $stmt->get_result();
+    if ($reg_res && $reg_res->num_rows > 0) {
+        $editing_registration = $reg_res->fetch_assoc();
+    }
+    $stmt->close();
+
+    if (!$editing_registration) {
+        display_error_page("Registration Not Found", "No matching registration was found for the provided details.");
+        exit;
+    }
+}
+
 // Partition fields for Stepper steps
 $personal_keys = ['player_id', 'mobile_number', 'initials'];
 $kit_keys = [
@@ -182,63 +230,135 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_GET['success'])) {
             $hq_int = intval($field_values['half_sleeve_qty']);
             $fq_int = intval($field_values['full_sleeve_qty']);
 
-            $insert_query = "
-                INSERT INTO `registrations` (
-                    `form_id`, `player_name`, `team_id`,
-                    `player_id`, `mobile_number`,
-                    `upper_jersey_size`, `lower_jersey_size`,
-                    `helmet_size`, `pad_size`, `batting_hand`,
-                    `half_sleeve_qty`, `full_sleeve_qty`,
-                    `jersey_name`,
-                    `jersey_number_opt1`, `jersey_number_opt2`, `jersey_number_opt3`,
-                    `jersey_number`, `shorts_size`, `trouser_size`, `initials`, `socks_size`, `chest_size`
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ";
+            if ($editing_registration) {
+                $update_query = "
+                    UPDATE `registrations` SET
+                        `player_name` = ?,
+                        `player_id` = ?,
+                        `mobile_number` = ?,
+                        `upper_jersey_size` = ?,
+                        `lower_jersey_size` = ?,
+                        `helmet_size` = ?,
+                        `pad_size` = ?,
+                        `batting_hand` = ?,
+                        `half_sleeve_qty` = ?,
+                        `full_sleeve_qty` = ?,
+                        `jersey_name` = ?,
+                        `jersey_number_opt1` = ?,
+                        `jersey_number_opt2` = ?,
+                        `jersey_number_opt3` = ?,
+                        `jersey_number` = ?,
+                        `shorts_size` = ?,
+                        `trouser_size` = ?,
+                        `initials` = ?,
+                        `socks_size` = ?,
+                        `chest_size` = ?
+                    WHERE `id` = ? AND `form_id` = ?
+                ";
 
-            $ins = $db->prepare($insert_query);
-            $ins->bind_param(
-                "isisssssssiissssssssss",
-                $form['id'],
-                $player_name,
-                $team_id,
-                $field_values['player_id'],
-                $field_values['mobile_number'],
-                $field_values['upper_jersey_size'],
-                $field_values['lower_jersey_size'],
-                $field_values['helmet_size'],
-                $field_values['pad_size'],
-                $field_values['batting_hand'],
-                $hq_int,
-                $fq_int,
-                $field_values['jersey_name'],
-                $field_values['jersey_number_opt1'],
-                $field_values['jersey_number_opt2'],
-                $field_values['jersey_number_opt3'],
-                $field_values['jersey_number'],
-                $field_values['shorts_size'],
-                $field_values['trouser_size'],
-                $field_values['initials'],
-                $field_values['socks_size'],
-                $field_values['chest_size']
-            );
+                $upd = $db->prepare($update_query);
+                $upd->bind_param(
+                    "ssssssssiissssssssssii",
+                    $player_name,
+                    $field_values['player_id'],
+                    $field_values['mobile_number'],
+                    $field_values['upper_jersey_size'],
+                    $field_values['lower_jersey_size'],
+                    $field_values['helmet_size'],
+                    $field_values['pad_size'],
+                    $field_values['batting_hand'],
+                    $hq_int,
+                    $fq_int,
+                    $field_values['jersey_name'],
+                    $field_values['jersey_number_opt1'],
+                    $field_values['jersey_number_opt2'],
+                    $field_values['jersey_number_opt3'],
+                    $field_values['jersey_number'],
+                    $field_values['shorts_size'],
+                    $field_values['trouser_size'],
+                    $field_values['initials'],
+                    $field_values['socks_size'],
+                    $field_values['chest_size'],
+                    $editing_registration['id'],
+                    $form['id']
+                );
 
-            if ($ins->execute()) {
-                $_SESSION['last_submission'] = [
-                    'player_name'       => $player_name,
-                    'team_name'         => 'Kollam Sailors',
-                    'jersey_name'       => $field_values['jersey_name'],
-                    'jersey_number_opt1' => $field_values['jersey_number_opt1'],
-                    'jersey_number_opt2' => $field_values['jersey_number_opt2'],
-                    'jersey_number_opt3' => $field_values['jersey_number_opt3'],
-                    'half_sleeve_qty'   => $hq_int,
-                    'full_sleeve_qty'   => $fq_int,
-                ];
-                header("Location: form.php?slug=" . urlencode($slug) . "&success=1");
-                exit;
+                if ($upd->execute()) {
+                    $_SESSION['last_submission'] = [
+                        'player_name'       => $player_name,
+                        'team_name'         => 'Kollam Sailors',
+                        'jersey_name'       => $field_values['jersey_name'],
+                        'jersey_number_opt1' => $field_values['jersey_number_opt1'],
+                        'jersey_number_opt2' => $field_values['jersey_number_opt2'],
+                        'jersey_number_opt3' => $field_values['jersey_number_opt3'],
+                        'half_sleeve_qty'   => $hq_int,
+                        'full_sleeve_qty'   => $fq_int,
+                    ];
+                    header("Location: form.php?slug=" . urlencode($slug) . "&success=2");
+                    exit;
+                } else {
+                    $errors['global'] = "Error updating registration: " . $db->error;
+                }
+                $upd->close();
             } else {
-                $errors['global'] = "Error saving registration: " . $db->error;
+                $insert_query = "
+                    INSERT INTO `registrations` (
+                        `form_id`, `player_name`, `team_id`,
+                        `player_id`, `mobile_number`,
+                        `upper_jersey_size`, `lower_jersey_size`,
+                        `helmet_size`, `pad_size`, `batting_hand`,
+                        `half_sleeve_qty`, `full_sleeve_qty`,
+                        `jersey_name`,
+                        `jersey_number_opt1`, `jersey_number_opt2`, `jersey_number_opt3`,
+                        `jersey_number`, `shorts_size`, `trouser_size`, `initials`, `socks_size`, `chest_size`
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ";
+
+                $ins = $db->prepare($insert_query);
+                $ins->bind_param(
+                    "isisssssssiissssssssss",
+                    $form['id'],
+                    $player_name,
+                    $team_id,
+                    $field_values['player_id'],
+                    $field_values['mobile_number'],
+                    $field_values['upper_jersey_size'],
+                    $field_values['lower_jersey_size'],
+                    $field_values['helmet_size'],
+                    $field_values['pad_size'],
+                    $field_values['batting_hand'],
+                    $hq_int,
+                    $fq_int,
+                    $field_values['jersey_name'],
+                    $field_values['jersey_number_opt1'],
+                    $field_values['jersey_number_opt2'],
+                    $field_values['jersey_number_opt3'],
+                    $field_values['jersey_number'],
+                    $field_values['shorts_size'],
+                    $field_values['trouser_size'],
+                    $field_values['initials'],
+                    $field_values['socks_size'],
+                    $field_values['chest_size']
+                );
+
+                if ($ins->execute()) {
+                    $_SESSION['last_submission'] = [
+                        'player_name'       => $player_name,
+                        'team_name'         => 'Kollam Sailors',
+                        'jersey_name'       => $field_values['jersey_name'],
+                        'jersey_number_opt1' => $field_values['jersey_number_opt1'],
+                        'jersey_number_opt2' => $field_values['jersey_number_opt2'],
+                        'jersey_number_opt3' => $field_values['jersey_number_opt3'],
+                        'half_sleeve_qty'   => $hq_int,
+                        'full_sleeve_qty'   => $fq_int,
+                    ];
+                    header("Location: form.php?slug=" . urlencode($slug) . "&success=1");
+                    exit;
+                } else {
+                    $errors['global'] = "Error saving registration: " . $db->error;
+                }
+                $ins->close();
             }
-            $ins->close();
         } catch (Exception $e) {
             $errors['global'] = "System database error. Please try again later.";
         }
@@ -255,8 +375,16 @@ if (isset($_GET['success'])) {
 // Helper to draw inputs
 function render_field_input($key, $config, $errors)
 {
+    global $editing_registration;
     $has_error = isset($errors[$key]);
-    $value = isset($_POST[$key]) ? htmlspecialchars($_POST[$key]) : '';
+    
+    if (isset($_POST[$key])) {
+        $value = htmlspecialchars($_POST[$key]);
+    } elseif ($editing_registration && isset($editing_registration[$key])) {
+        $value = htmlspecialchars($editing_registration[$key]);
+    } else {
+        $value = '';
+    }
 
     echo '<div class="form-group">';
     echo '<label class="form-label" for="' . $key . '">' . htmlspecialchars($config['label']) . ($config['required'] ? ' <span style="color:var(--primary);">*</span>' : '') . '</label>';
@@ -283,12 +411,27 @@ function render_field_input($key, $config, $errors)
         echo '</div>';
     } elseif (in_array($key, ['half_sleeve_qty', 'full_sleeve_qty']) || ($config['type'] ?? '') === 'stepper') {
         // Quantity stepper (handles both legacy key check and catalog type='stepper')
-        $cur = isset($_POST[$key]) ? intval($_POST[$key]) : 0;
+        $cur = 0;
+        if (isset($_POST[$key])) {
+            $cur = intval($_POST[$key]);
+        } elseif ($editing_registration && isset($editing_registration[$key])) {
+            $cur = intval($editing_registration[$key]);
+        }
+        
+        $other_key = ($key === 'half_sleeve_qty') ? 'full_sleeve_qty' : 'half_sleeve_qty';
+        $other_cur = 0;
+        if (isset($_POST[$other_key])) {
+            $other_cur = intval($_POST[$other_key]);
+        } elseif ($editing_registration && isset($editing_registration[$other_key])) {
+            $other_cur = intval($editing_registration[$other_key]);
+        }
+        $combined_total = $cur + $other_cur;
+
         echo '<div class="stepper-container">';
         echo '<button type="button" class="stepper-btn" onclick="adjustQty(\'' . $key . '\', -1)" id="btn-minus-' . $key . '"' . ($cur <= 0 ? ' disabled' : '') . '>−</button>';
         echo '<span class="stepper-input" id="display-' . $key . '">' . $cur . '</span>';
         echo '<input type="hidden" name="' . $key . '" id="' . $key . '" value="' . $cur . '">';
-        echo '<button type="button" class="stepper-btn" onclick="adjustQty(\'' . $key . '\', 1)" id="btn-plus-' . $key . '"' . ($cur >= 3 ? ' disabled' : '') . '>+</button>';
+        echo '<button type="button" class="stepper-btn" onclick="adjustQty(\'' . $key . '\', 1)" id="btn-plus-' . $key . '"' . ($cur >= 3 || $combined_total >= 4 ? ' disabled' : '') . '>+</button>';
         echo '</div>';
         echo '<small style="color:var(--text-muted); font-size:0.78rem; margin-top:0.35rem; display:block;">Max 3 per style · Combined total max 4</small>';
     } else {
@@ -366,8 +509,100 @@ require_once __DIR__ . '/includes/public_header.php';
             <h1 class="form-title"><?php echo htmlspecialchars($form['title']); ?></h1>
         </div>
 
+        <!-- Edit Registration Link/Form -->
+        <?php if ($editing_registration) : ?>
+            <div class="alert alert-info" style="margin-bottom: 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+                <div>
+                    <strong>Mode: Editing Registration</strong><br>
+                    <span style="font-size: 0.85rem; opacity: 0.9;">Editing details for <strong><?php echo htmlspecialchars($editing_registration['player_name']); ?></strong> (<?php echo htmlspecialchars($editing_registration['mobile_number']); ?>)</span>
+                </div>
+                <a href="form.php?slug=<?php echo urlencode($slug); ?>" class="btn btn-secondary btn-sm" style="background: rgba(255, 255, 255, 0.15); border-color: transparent; color: white;">Cancel Edit</a>
+            </div>
+        <?php else : ?>
+            <!-- Phone Lookup form -->
+            <div id="phone-lookup-container" style="display: <?php echo (!empty($lookup_phone)) ? 'block' : 'none'; ?>; margin-bottom: 2rem; border-radius: var(--radius-md); padding: 1.5rem;">
+                <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-top: 0; margin-bottom: 0.5rem; font-style: italic; font-family: var(--font-heading);">FIND YOUR REGISTRATION</h3>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.4;">Enter the mobile number used during registration to retrieve and edit your details.</p>
+                
+                <?php if (!empty($lookup_error)) : ?>
+                    <div class="alert alert-danger" style="padding: 0.75rem 1rem; font-size: 0.85rem; margin-bottom: 1rem;">
+                        <?php echo $lookup_error; ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (!empty($lookup_results)) : ?>
+                    <!-- Display matching players list -->
+                    <div style="margin-bottom: 1.5rem;">
+                        <label class="form-label" style="margin-bottom: 0.75rem; color: var(--accent-yellow);">Multiple registrations found. Select a player to edit:</label>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <?php foreach ($lookup_results as $reg) : ?>
+                                <a href="form.php?slug=<?php echo urlencode($slug); ?>&edit_id=<?php echo $reg['id']; ?>&phone=<?php echo urlencode($lookup_phone); ?>" class="form-link-card" style="margin-bottom: 0; padding: 0.75rem 1rem; background: rgba(30, 58, 101, 0.4); text-decoration: none; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                                    <div>
+                                        <strong style="color: var(--text-primary); font-size: 0.95rem;"><?php echo htmlspecialchars($reg['player_name']); ?></strong>
+                                        <?php if (!empty($reg['jersey_name'])) : ?>
+                                            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.1rem;">Jersey Name: <?php echo htmlspecialchars($reg['jersey_name']); ?></div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <span class="btn btn-primary btn-sm" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;">Edit ➔</span>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
+                <form id="phoneLookupForm" method="GET" action="form.php">
+                    <input type="hidden" name="slug" value="<?php echo htmlspecialchars($slug); ?>">
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                        <label class="form-label" for="lookup_phone">Mobile Number</label>
+                        <input type="text" id="lookup_phone" name="lookup_phone" class="form-control" placeholder="Enter registered mobile number" value="<?php echo htmlspecialchars($lookup_phone); ?>" required>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                        <button type="button" id="cancel-lookup-btn" class="btn btn-secondary btn-sm">Cancel</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Search</button>
+                    </div>
+                </form>
+            </div>
+        <?php endif; ?>
+
+        <!-- Landing / Mode Choice Screen -->
+        <?php 
+        $show_choice_screen = (empty($lookup_phone) && !$editing_registration);
+        ?>
+        
+        <div id="mode-choice-container" style="display: <?php echo $show_choice_screen ? 'block' : 'none'; ?>; padding: 0.5rem 0 1.5rem 0;">
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.75rem; text-align: center; line-height: 1.5;">
+                Select an option to proceed with your player kit registration or edit your current details.
+            </p>
+            
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <!-- Choice 1: New Registration -->
+                <button type="button" id="choice-new-btn" class="choice-card" style="background: rgba(11, 21, 40, 0.6); border: 2px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 1.25rem; transition: all var(--transition-normal); width: 100%; color: var(--text-primary); outline: none;">
+                    <div style="width: 46px; height: 46px; border-radius: var(--radius-md); background: rgba(225, 29, 72, 0.15); border: 1px solid var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: var(--primary); flex-shrink: 0;">
+                        📝
+                    </div>
+                    <div style="flex: 1;">
+                        <h3 style="font-size: 1.15rem; margin: 0 0 0.2rem 0; color: var(--text-primary); font-family: var(--font-heading); text-transform: uppercase; font-style: italic;">New Registration</h3>
+                        <p style="margin: 0; font-size: 0.8rem; color: var(--text-secondary); font-family: var(--font-sans); font-weight: normal; line-height: 1.4;">Submit your details, select sizes, jersey quantities and choose numbers.</p>
+                    </div>
+                    <div style="font-size: 1.2rem; color: var(--text-muted); padding-left: 0.25rem;">➔</div>
+                </button>
+
+                <!-- Choice 2: Edit Existing Registration -->
+                <button type="button" id="choice-edit-btn" class="choice-card" style="background: rgba(11, 21, 40, 0.6); border: 2px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 1.25rem; transition: all var(--transition-normal); width: 100%; color: var(--text-primary); outline: none;">
+                    <div style="width: 46px; height: 46px; border-radius: var(--radius-md); background: rgba(0, 102, 255, 0.15); border: 1px solid var(--accent-blue); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: var(--accent-blue); flex-shrink: 0;">
+                        ✏️
+                    </div>
+                    <div style="flex: 1;">
+                        <h3 style="font-size: 1.15rem; margin: 0 0 0.2rem 0; color: var(--text-primary); font-family: var(--font-heading); text-transform: uppercase; font-style: italic;">Edit Registration</h3>
+                        <p style="margin: 0; font-size: 0.8rem; color: var(--text-secondary); font-family: var(--font-sans); font-weight: normal; line-height: 1.4;">Retrieve your previous registration using your mobile number to make changes.</p>
+                    </div>
+                    <div style="font-size: 1.2rem; color: var(--text-muted); padding-left: 0.25rem;">➔</div>
+                </button>
+            </div>
+        </div>
+
         <!-- Stepper Progress Header indicators -->
-        <div class="stepper-header">
+        <div class="stepper-header" style="display: <?php echo $show_choice_screen ? 'none' : 'flex'; ?>;">
             <!-- Step 1 Indicator -->
             <div class="step-indicator active" id="ind-1">1</div>
             
@@ -386,7 +621,7 @@ require_once __DIR__ . '/includes/public_header.php';
             <div class="alert alert-danger"><?php echo htmlspecialchars($errors['global']); ?></div>
         <?php endif; ?>
 
-        <form method="POST" id="kitForm">
+        <form method="POST" id="kitForm" style="display: <?php echo $show_choice_screen ? 'none' : 'block'; ?>;">
             
             <!-- STEP 1: Core Details (Player Name) -->
             <div class="form-step active" id="step-1">
@@ -394,13 +629,22 @@ require_once __DIR__ . '/includes/public_header.php';
                 
                 <div class="form-group">
                     <label class="form-label" for="player_name">Full Player Name <span style="color:var(--primary);">*</span></label>
-                    <input type="text" id="player_name" name="player_name" class="form-control" placeholder="Enter your full name" required value="<?php echo isset($_POST['player_name']) ? htmlspecialchars($_POST['player_name']) : ''; ?>" autocomplete="name" inputmode="text">
+                    <?php
+                    $player_name_val = '';
+                    if (isset($_POST['player_name'])) {
+                        $player_name_val = $_POST['player_name'];
+                    } elseif ($editing_registration && isset($editing_registration['player_name'])) {
+                        $player_name_val = $editing_registration['player_name'];
+                    }
+                    ?>
+                    <input type="text" id="player_name" name="player_name" class="form-control" placeholder="Enter your full name" required value="<?php echo htmlspecialchars($player_name_val); ?>" autocomplete="name" inputmode="text">
                     <?php if (isset($errors['player_name'])) : ?>
                         <small style="color:var(--danger); font-size:0.8rem; margin-top:0.25rem; display:block;"><?php echo htmlspecialchars($errors['player_name']); ?></small>
                     <?php endif; ?>
                 </div>
 
-                <div class="form-actions align-right">
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="step1-back-btn">Back</button>
                     <?php if ($has_step2 || $has_step3) : ?>
                         <button type="button" class="btn btn-primary" onclick="nextStep(1)">Continue</button>
                     <?php else : ?>
@@ -471,7 +715,11 @@ require_once __DIR__ . '/includes/public_header.php';
                     <?php endif; ?>
 
                     <?php /* ── SLEEVE STEPPERS: side by side ── */
-                    if (!empty($active_sleeves)) : ?>
+                    if (!empty($active_sleeves)) : 
+                        $half_qty_val = isset($_POST['half_sleeve_qty']) ? intval($_POST['half_sleeve_qty']) : ($editing_registration ? intval($editing_registration['half_sleeve_qty']) : 0);
+                        $full_qty_val = isset($_POST['full_sleeve_qty']) ? intval($_POST['full_sleeve_qty']) : ($editing_registration ? intval($editing_registration['full_sleeve_qty']) : 0);
+                        $combined_sleeve_total = $half_qty_val + $full_qty_val;
+                    ?>
                     <div class="kit-section-label">Playing Jersey Quantity</div>
                     <div class="sleeve-row">
                         <?php foreach ($sleeve_keys as $k) :
@@ -479,7 +727,13 @@ require_once __DIR__ . '/includes/public_header.php';
                                 continue;
                             }
                             $c = $step3_fields[$k];
-                            $cur = isset($_POST[$k]) ? intval($_POST[$k]) : 0;
+                            if (isset($_POST[$k])) {
+                                $cur = intval($_POST[$k]);
+                            } elseif ($editing_registration && isset($editing_registration[$k])) {
+                                $cur = intval($editing_registration[$k]);
+                            } else {
+                                $cur = 0;
+                            }
                             ?>
                         <div class="sleeve-cell">
                             <div class="form-label" style="margin-bottom:0.5rem;">
@@ -489,7 +743,7 @@ require_once __DIR__ . '/includes/public_header.php';
                                 <button type="button" class="stepper-btn" onclick="adjustQty('<?php echo $k; ?>',-1)" id="btn-minus-<?php echo $k; ?>"<?php echo $cur <= 0 ? ' disabled' : ''; ?>>−</button>
                                 <span class="stepper-input" id="display-<?php echo $k; ?>"><?php echo $cur; ?></span>
                                 <input type="hidden" name="<?php echo $k; ?>" id="<?php echo $k; ?>" value="<?php echo $cur; ?>">
-                                <button type="button" class="stepper-btn" onclick="adjustQty('<?php echo $k; ?>',1)" id="btn-plus-<?php echo $k; ?>"<?php echo $cur >= 3 ? ' disabled' : ''; ?>>+</button>
+                                <button type="button" class="stepper-btn" onclick="adjustQty('<?php echo $k; ?>',1)" id="btn-plus-<?php echo $k; ?>"<?php echo ($cur >= 3 || $combined_sleeve_total >= 4) ? ' disabled' : ''; ?>>+</button>
                             </div>
                             <?php if (isset($errors[$k])) : ?>
                                 <small style="color:var(--danger);font-size:0.78rem;display:block;margin-top:0.25rem;"><?php echo htmlspecialchars($errors[$k]); ?></small>
@@ -520,7 +774,13 @@ require_once __DIR__ . '/includes/public_header.php';
                                 if (!isset($step3_fields[$opt_key])) {
                                     continue;
                                 }
-                                $opt_val = isset($_POST[$opt_key]) ? htmlspecialchars($_POST[$opt_key]) : '';
+                                if (isset($_POST[$opt_key])) {
+                                    $opt_val = htmlspecialchars($_POST[$opt_key]);
+                                } elseif ($editing_registration && isset($editing_registration[$opt_key])) {
+                                    $opt_val = htmlspecialchars($editing_registration[$opt_key]);
+                                } else {
+                                    $opt_val = '';
+                                }
                                 $has_opt_err = isset($errors[$opt_key]);
                                 ?>
                             <div>
@@ -536,7 +796,7 @@ require_once __DIR__ . '/includes/public_header.php';
                                     value="<?php echo $opt_val; ?>" autocomplete="off"
                                     <?php echo ($i === 0 && ($step3_fields[$opt_key]['required'] ?? false)) ? 'required' : ''; ?>>
                                 <?php if ($has_opt_err) : ?>
-                                    <small style="color:var(--danger);font-size:0.75rem;display:block;margin-top:0.2rem;"><?php echo htmlspecialchars($errors[$opt_key]); ?></small>
+                                    <small style="color:var(--danger);font-size:0.75rem;display:block;margin-top:0.2,rem;"><?php echo htmlspecialchars($errors[$opt_key]); ?></small>
                                 <?php endif; ?>
                             </div>
                             <?php endforeach; ?>
@@ -568,6 +828,65 @@ require_once __DIR__ . '/includes/public_header.php';
 // Expose configuration flags to JS stepper
 var hasStep2 = <?php echo $has_step2 ? 'true' : 'false'; ?>;
 var hasStep3 = <?php echo $has_step3 ? 'true' : 'false'; ?>;
+
+document.addEventListener('DOMContentLoaded', function() {
+    var choiceContainer = document.getElementById('mode-choice-container');
+    var choiceNewBtn = document.getElementById('choice-new-btn');
+    var choiceEditBtn = document.getElementById('choice-edit-btn');
+    
+    var stepperHeader = document.querySelector('.stepper-header');
+    var kitForm = document.getElementById('kitForm');
+    var step1BackBtn = document.getElementById('step1-back-btn');
+    
+    var lookupContainer = document.getElementById('phone-lookup-container');
+    var cancelBtn = document.getElementById('cancel-lookup-btn');
+    var lookupPhoneInput = document.getElementById('lookup_phone');
+
+    // 1. Choose New Registration
+    if (choiceNewBtn && choiceContainer && stepperHeader && kitForm) {
+        choiceNewBtn.addEventListener('click', function() {
+            choiceContainer.style.display = 'none';
+            stepperHeader.style.display = 'flex';
+            kitForm.style.display = 'block';
+            showStep(1); // Ensure step 1 is active
+            if (typeof window.scrollTo === 'function') {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+    }
+
+    // 2. Choose Edit Existing Registration
+    if (choiceEditBtn && choiceContainer && lookupContainer) {
+        choiceEditBtn.addEventListener('click', function() {
+            choiceContainer.style.display = 'none';
+            lookupContainer.style.display = 'block';
+            if (lookupPhoneInput) {
+                lookupPhoneInput.focus();
+            }
+        });
+    }
+
+    // 3. Step 1 Back to Menu
+    if (step1BackBtn && kitForm && stepperHeader && choiceContainer) {
+        step1BackBtn.addEventListener('click', function() {
+            kitForm.style.display = 'none';
+            stepperHeader.style.display = 'none';
+            choiceContainer.style.display = 'block';
+        });
+    }
+
+    // 4. Cancel lookup (go back to menu or reload URL)
+    if (cancelBtn && lookupContainer && choiceContainer) {
+        cancelBtn.addEventListener('click', function() {
+            if (window.location.search.indexOf('lookup_phone') !== -1) {
+                window.location.href = 'form.php?slug=<?php echo urlencode($slug); ?>';
+            } else {
+                lookupContainer.style.display = 'none';
+                choiceContainer.style.display = 'block';
+            }
+        });
+    }
+});
 </script>
 <?php require_once __DIR__ . '/includes/public_footer.php'; ?>
 </body>
@@ -674,16 +993,19 @@ function display_success_page($formTitle, $summary)
         ?>
         <div class="public-form-container" style="max-width: 540px;">
             <div class="card" style="position: relative; overflow: hidden;">
+                <?php
+                $is_update = isset($_GET['success']) && $_GET['success'] == '2';
+                ?>
                 
                 <!-- Success icon header -->
                 <div style="text-align: center; margin-bottom: 1.5rem;">
                     <div style="width: 70px; height: 70px; border-radius: 50%; background: var(--success-glow); border: 2px solid var(--success); color: var(--success); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; margin: 0 auto 1rem auto; animation: pulse 2s infinite;">✓</div>
-                    <h1 style="font-size: 1.75rem; color: var(--success);">Registration Success!</h1>
+                    <h1 style="font-size: 1.75rem; color: var(--success);"><?php echo $is_update ? 'Registration Updated!' : 'Registration Success!'; ?></h1>
                     <p style="color: var(--text-secondary); font-size: 0.9rem;"><?php echo htmlspecialchars($formTitle); ?></p>
                 </div>
                 
                 <p style="color: var(--text-secondary); font-size: 0.95rem; text-align: center; margin-bottom: 2rem;">
-                    Your kit and uniform details have been registered in the database. Below is your printing confirmation summary:
+                    <?php echo $is_update ? 'Your kit and uniform details have been updated in the database. Below is your updated confirmation summary:' : 'Your kit and uniform details have been registered in the database. Below is your printing confirmation summary:'; ?>
                 </p>
 
                 <?php if ($summary) : ?>
@@ -733,11 +1055,15 @@ function display_success_page($formTitle, $summary)
                 <?php endif; ?>
                 
                 <p style="color: var(--text-muted); font-size: 0.8rem; text-align: center; font-style: italic;">
-                    Need to correct an entry? Please contact your team administration to update your details before print manufacturing begins.
+                    Need to correct an entry again? You can search and edit it using your phone number at any time before manufacturing begins.
                 </p>
 
-                <div style="margin-top: 2rem; display: flex; justify-content: center;">
-                    <a href="form.php?slug=<?php echo urlencode($_GET['slug']); ?>" class="btn btn-secondary btn-sm">Register Another Player</a>
+                <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 1rem;">
+                    <?php if ($is_update) : ?>
+                        <a href="form.php?slug=<?php echo urlencode($_GET['slug']); ?>" class="btn btn-secondary btn-sm">Back to Form</a>
+                    <?php else : ?>
+                        <a href="form.php?slug=<?php echo urlencode($_GET['slug']); ?>" class="btn btn-secondary btn-sm">Register Another Player</a>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>

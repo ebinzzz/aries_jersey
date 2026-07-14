@@ -372,6 +372,17 @@ a:hover {
     box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.2);
 }
 
+select.form-control {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 12px;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    padding-right: 2.5rem;
+}
+
 /* Toggle Switch */
 .switch-container {
     display: flex;
@@ -1674,57 +1685,57 @@ select.invalid {
 }
 
 /* Header adaptation */
-.theme-light .public-form-body .pub-header {
+.theme-light .pub-header {
     background: rgba(255, 255, 255, 0.8) !important;
     border-bottom: 1px solid #e2e8f0 !important;
     box-shadow: 0 1px 10px rgba(15, 23, 42, 0.05) !important;
 }
-.theme-light .public-form-body .pub-logo-name {
+.theme-light .pub-logo-name {
     background: none !important;
     -webkit-text-fill-color: initial !important;
     color: #0f172a !important;
 }
-.theme-light .public-form-body .pub-logo-sub {
+.theme-light .pub-logo-sub {
     color: #64748b !important;
     -webkit-text-fill-color: initial !important;
 }
-.theme-light .public-form-body .pub-nav-link {
+.theme-light .pub-nav-link {
     color: #475569 !important;
 }
-.theme-light .public-form-body .pub-nav-link:hover {
+.theme-light .pub-nav-link:hover {
     color: #0f172a !important;
 }
-.theme-light .public-form-body .pub-mobile-nav {
+.theme-light .pub-mobile-nav {
     background: #ffffff !important;
     border-top: 1px solid #e2e8f0 !important;
 }
-.theme-light .public-form-body .pub-mobile-link {
+.theme-light .pub-mobile-link {
     color: #475569 !important;
     border-bottom: 1px solid #e2e8f0 !important;
 }
-.theme-light .public-form-body .pub-menu-btn {
+.theme-light .pub-menu-btn {
     background: #f1f5f9 !important;
     border-color: #cbd5e1 !important;
 }
-.theme-light .public-form-body .pub-menu-btn span {
+.theme-light .pub-menu-btn span {
     background: #475569 !important;
 }
 
 /* Footer adaptation */
-.theme-light .public-form-body .pub-footer {
+.theme-light .pub-footer {
     background: rgba(255, 255, 255, 0.8) !important;
     border-top: 1px solid #e2e8f0 !important;
     color: #64748b !important;
     margin-top: auto;
 }
-.theme-light .public-form-body .pub-footer-name,
-.theme-light .public-form-body .pub-footer-copy {
+.theme-light .pub-footer-name,
+.theme-light .pub-footer-copy {
     color: #64748b !important;
 }
-.theme-light .public-form-body .pub-footer-links a {
+.theme-light .pub-footer-links a {
     color: #64748b !important;
 }
-.theme-light .public-form-body .pub-footer-links a:hover {
+.theme-light .pub-footer-links a:hover {
     color: var(--accent-blue) !important;
 }
 
@@ -1792,6 +1803,12 @@ select.invalid {
 }
 .theme-light .public-form-body select.form-control {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 1rem center !important;
+    background-size: 12px !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
 }
 
 /* Sleeve Steppers */
@@ -1807,7 +1824,25 @@ select.invalid {
     background: #cbd5e1 !important;
 }
 .theme-light .public-form-body .stepper-input {
+    background: #ffffff !important;
     color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* Radio buttons adaptation */
+.theme-light .public-form-body .radio-label {
+    color: #475569 !important;
+}
+.theme-light .public-form-body .radio-label:hover {
+    color: #0f172a !important;
+}
+.theme-light .public-form-body .radio-input {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+}
+.theme-light .public-form-body .radio-input:checked {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 8px var(--primary-glow) !important;
 }
 
 /* Secondary Button */
@@ -1863,5 +1898,70 @@ select.invalid {
     background: #e2e8f0 !important;
     color: #0f172a !important;
 }
+
+/* Alert Info */
+.alert-info {
+    background: rgba(0, 102, 255, 0.15) !important;
+    color: #38bdf8 !important;
+    border-color: rgba(0, 102, 255, 0.35) !important;
+}
+
+/* Form Link Card for multiple search results */
+.form-link-card {
+    transition: all var(--transition-normal) !important;
+}
+.form-link-card:hover {
+    background: rgba(30, 58, 101, 0.7) !important;
+    border-color: var(--accent-blue) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 102, 255, 0.15);
+}
+
+/* Mode Selection Choice Cards */
+.choice-card {
+    transition: all var(--transition-normal) !important;
+}
+.choice-card:hover {
+    border-color: var(--accent-blue) !important;
+    background: rgba(30, 58, 101, 0.45) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 102, 255, 0.15);
+}
+.choice-card:active {
+    transform: translateY(0);
+}
+.theme-light .choice-card {
+    background: #ffffff !important;
+    border-color: #cbd5e1 !important;
+}
+.theme-light .choice-card h3 {
+    color: #0f172a !important;
+}
+.theme-light .choice-card p {
+    color: #475569 !important;
+}
+.theme-light .choice-card:hover {
+    background: #f8fafc !important;
+    border-color: var(--accent-blue) !important;
+    box-shadow: 0 8px 24px rgba(0, 102, 255, 0.08) !important;
+}
+
+/* Phone Lookup Container default and theme overrides */
+#phone-lookup-container {
+    background: rgba(11, 21, 40, 0.9);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.theme-light #phone-lookup-container {
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05) !important;
+}
+
+.theme-light #phone-lookup-container p {
+    color: #475569 !important;
+}
+
 
 

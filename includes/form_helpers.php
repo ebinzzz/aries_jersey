@@ -32,6 +32,17 @@ function get_form_fields_config($form_id)
             $result->free();
         }
         $stmt->close();
+
+        // Dynamically override upper/lower jersey size options to match constraints:
+        // - Upper Jersey Size: Even numbers only, max 46 (start at 36)
+        // - Lower Jersey Size: Even numbers only, max 44 (start at 26)
+        if (isset($fields['upper_jersey_size'])) {
+            $fields['upper_jersey_size']['options'] = ['36', '38', '40', '42', '44', '46'];
+        }
+        if (isset($fields['lower_jersey_size'])) {
+            $fields['lower_jersey_size']['options'] = ['26', '28', '30', '32', '34', '36', '38', '40', '42', '44'];
+        }
+
         return $fields;
     } catch (Exception $e) {
         return [];

@@ -201,6 +201,66 @@ try {
             }
         }
 
+        /* Light Theme Overrides for Landing Page */
+        .theme-light .landing-body {
+            background: radial-gradient(circle at top right, rgba(0, 102, 255, 0.05), transparent 45%),
+                        radial-gradient(circle at bottom left, rgba(225, 29, 72, 0.04), transparent 45%),
+                        #f8fafc !important;
+            color: #0f172a !important;
+        }
+
+        .theme-light .hero-title {
+            background: none !important;
+            -webkit-text-fill-color: initial !important;
+            color: #0f172a !important;
+        }
+
+        .theme-light .hero-description {
+            color: #475569 !important;
+        }
+
+        .theme-light .forms-section-title {
+            color: #475569 !important;
+        }
+
+        .theme-light .visualizer-card {
+            background: #ffffff !important;
+            border: 1px solid rgba(0, 102, 255, 0.08) !important;
+            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.02) !important;
+            color: #0f172a !important;
+        }
+
+        .theme-light .visualizer-card h2 {
+            color: #0f172a !important;
+        }
+
+        .theme-light .visualizer-card p {
+            color: #475569 !important;
+        }
+
+        .theme-light .jersey-video-container {
+            background: #e2e8f0 !important;
+            border-color: #cbd5e1 !important;
+        }
+
+        .theme-light .visualizer-card strong {
+            color: #0f172a !important;
+        }
+
+        .theme-light .form-link-card {
+            background: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+        }
+
+        .theme-light .form-link-card:hover {
+            border-color: var(--accent-blue) !important;
+            background: #f8fafc !important;
+            box-shadow: 0 8px 24px rgba(0, 102, 255, 0.08) !important;
+        }
+
+        .theme-light .form-link-card strong {
+            color: #0f172a !important;
+        }
     </style>
     <!-- No external 3D libraries needed -->
 </head>
