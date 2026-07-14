@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Image Inspector Tool</title>
+    <style>
+        body { background: #111; color: #fff; font-family: sans-serif; text-align: center; margin: 0; padding: 20px; }
+        .btn { background: #0066ff; color: white; border: none; padding: 10px 20px; font-size: 1rem; cursor: pointer; border-radius: 4px; margin: 5px; }
+        .btn:hover { background: #0052cc; }
+        .btn.active { background: #e11d48; }
+        canvas { border: 1px solid #555; background: #222; max-width: 100%; margin-top: 15px; cursor: crosshair; }
+        #coords { font-size: 1.2rem; margin: 15px; color: #00ffcc; font-weight: bold; }
+        .log-box { width: 80%; margin: 15px auto; background: #222; border: 1px solid #444; padding: 10px; max-height: 150px; overflow-y: auto; text-align: left; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h2>Aries Kollam Sailors Kit - Image Inspector</h2>
+    <div>
+        <button class="btn active" onclick="loadImg('assets/images/jersey_front.png', this)">Jersey Front</button>
+        <button class="btn" onclick="loadImg('assets/images/jersey_back.png', this)">Jersey Back</button>
+        <button class="btn" onclick="loadImg('assets/images/pants_front.png', this)">Pants Front</button>
+        <button class="btn" onclick="loadImg('assets/images/pants_side.png', this)">Pants Side</button>
+    </div>
+    
+    <div id="coords">Click on the image to inspect coordinates and colors</div>
+    <canvas id="canvas"></canvas>
+    
+    <h3>Click History</h3>
+    <div class="log-box" id="log"></div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const coords = document.getElementById('coords');
+        const log = document.getElementById('log');
+        let currentImg = new Image();
+        let currentPath = '';
+
+        function loadImg(path, btn) {
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            
+            currentPath = path;
+            currentImg = new Image();
+            currentImg.src = path;
+            currentImg.onload = () => {
+                canvas.width = currentImg.width;
+                canvas.height = currentImg.height;
+                ctx.drawImage(currentImg, 0, 0);
+                coords.textContent = `Loaded ${path.split('/').pop()} (${currentImg.width}x${currentImg.height})`;
+            };
+        }
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.round((e.clientX - rect.left) * (canvas.width / rect.width));
+            const y = Math.round((e.clientY - rect.top) * (canvas.height / rect.height));
+            
+            // Get pixel color
+            const pixel = ctx.getImageData(x, y, 1, 1).data;
+            const hex = "#" + ("000000" + ((pixel[0] << 16) | (pixel[1] << 8) | pixel[2]).toString(16)).slice(-6);
+            
+            const msg = `Click at X: ${x}, Y: ${y} | Color: ${hex} | RGB: (${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
+            coords.textContent = msg;
+            
+            const entry = document.createElement('div');
+            entry.textContent = `[${currentPath.split('/').pop()}] X: ${x}, Y: ${y} -> Hex: ${hex}`;
+            log.prepend(entry);
+
+            // Draw a temporary crosshair
+            ctx.drawImage(currentImg, 0, 0);
+            ctx.strokeStyle = '#00ffcc';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, 2 * Math.PI);
+            ctx.moveTo(x - 15, y); ctx.lineTo(x + 15, y);
+            ctx.moveTo(x, y - 15); ctx.lineTo(x, y + 15);
+            ctx.stroke();
+        });
+
+        // Initialize with front jersey
+        loadImg('assets/images/jersey_front.png');
+    </script>
+</body>
+</html>
