@@ -208,8 +208,12 @@ try {
 
     <?php
     // Shared public header
-    define('PUBLIC_ROOT', '/aries_jersey/');
-    define('ADMIN_URL', '/aries_jersey/admin/login.php');
+    if (!defined('PUBLIC_ROOT')) {
+        define('PUBLIC_ROOT', '/aries_jersey/');
+    }
+    if (!defined('ADMIN_URL')) {
+        define('ADMIN_URL', PUBLIC_ROOT . 'admin/login.php');
+    }
     require_once __DIR__ . '/includes/public_header.php';
     ?>
 

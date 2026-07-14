@@ -23,6 +23,18 @@ define('DB_PASS', $_ENV['DB_PASS'] ?? (getenv('DB_PASS') !== false ? getenv('DB_
 define('DB_NAME', $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?: 'playerkit_db');
 define('DB_PORT', isset($_ENV['DB_PORT']) ? (int)$_ENV['DB_PORT'] : (int)(getenv('DB_PORT') ?: 3306));
 
+// Application Base URL/Path settings
+if (!defined('PUBLIC_ROOT')) {
+    $basePath = $_ENV['BASE_PATH'] ?? getenv('BASE_PATH') ?: '/';
+    if (substr($basePath, -1) !== '/') {
+        $basePath .= '/';
+    }
+    define('PUBLIC_ROOT', $basePath);
+}
+if (!defined('ADMIN_URL')) {
+    define('ADMIN_URL', PUBLIC_ROOT . 'admin/login.php');
+}
+
 $conn = null;
 $db_connection_error = null;
 

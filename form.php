@@ -346,9 +346,13 @@ function render_field_input($key, $config, $errors)
 
 <?php
 // Shared public header with back-to-home link
-define('PUBLIC_ROOT', '/aries_jersey/');
-define('ADMIN_URL', '/aries_jersey/admin/login.php');
-$back_url   = '/aries_jersey/';
+if (!defined('PUBLIC_ROOT')) {
+    define('PUBLIC_ROOT', '/aries_jersey/');
+}
+if (!defined('ADMIN_URL')) {
+    define('ADMIN_URL', PUBLIC_ROOT . 'admin/login.php');
+}
+$back_url   = PUBLIC_ROOT;
 $back_label = '← Home';
 require_once __DIR__ . '/includes/public_header.php';
 ?>
@@ -587,7 +591,7 @@ function display_error_page($title, $body)
             define('PUBLIC_ROOT', '/aries_jersey/');
         }
         if (!defined('ADMIN_URL')) {
-            define('ADMIN_URL', '/aries_jersey/admin/login.php');
+            define('ADMIN_URL', PUBLIC_ROOT . 'admin/login.php');
         }
         require_once __DIR__ . '/includes/public_header.php';
         ?>
@@ -624,7 +628,7 @@ function display_closed_page($formTitle)
             define('PUBLIC_ROOT', '/aries_jersey/');
         }
         if (!defined('ADMIN_URL')) {
-            define('ADMIN_URL', '/aries_jersey/admin/login.php');
+            define('ADMIN_URL', PUBLIC_ROOT . 'admin/login.php');
         }
         require_once __DIR__ . '/includes/public_header.php';
         ?>
@@ -664,7 +668,7 @@ function display_success_page($formTitle, $summary)
             define('PUBLIC_ROOT', '/aries_jersey/');
         }
         if (!defined('ADMIN_URL')) {
-            define('ADMIN_URL', '/aries_jersey/admin/login.php');
+            define('ADMIN_URL', PUBLIC_ROOT . 'admin/login.php');
         }
         require_once __DIR__ . '/includes/public_header.php';
         ?>
