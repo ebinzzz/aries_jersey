@@ -3,6 +3,9 @@
 require_once __DIR__ . '/includes/db_config.php';
 require_once __DIR__ . '/includes/form_helpers.php';
 
+// Feature Flag: Allow players to edit their registrations
+$allow_edit_registration = false;
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -41,9 +44,9 @@ if ($form['status'] === 'closed' && !isset($_GET['success'])) {
 $fields_config = get_form_fields_config($form['id']);
 
 // Check for lookup or edit parameters
-$lookup_phone = trim($_GET['lookup_phone'] ?? '');
-$edit_id = intval($_GET['edit_id'] ?? 0);
-$phone = trim($_GET['phone'] ?? '');
+$lookup_phone = $allow_edit_registration ? trim($_GET['lookup_phone'] ?? '') : '';
+$edit_id = $allow_edit_registration ? intval($_GET['edit_id'] ?? 0) : 0;
+$phone = $allow_edit_registration ? trim($_GET['phone'] ?? '') : '';
 $editing_registration = null;
 $lookup_results = null;
 $lookup_error = '';
@@ -566,12 +569,12 @@ require_once __DIR__ . '/includes/public_header.php';
 
         <!-- Landing / Mode Choice Screen -->
         <?php 
-        $show_choice_screen = (empty($lookup_phone) && !$editing_registration);
+        $show_choice_screen = (empty($lookup_phone) && !$editing_registration && $allow_edit_registration);
         ?>
         
         <div id="mode-choice-container" style="display: <?php echo $show_choice_screen ? 'block' : 'none'; ?>; padding: 0.5rem 0 1.5rem 0;">
             <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.75rem; text-align: center; line-height: 1.5;">
-                Select an option to proceed with your player kit registration or edit your current details.
+                Select an option to proceed with your player kit registration<?php echo $allow_edit_registration ? ' or edit your current details' : ''; ?>.
             </p>
             
             <div style="display: flex; flex-direction: column; gap: 1rem;">
@@ -587,6 +590,7 @@ require_once __DIR__ . '/includes/public_header.php';
                     <div style="font-size: 1.2rem; color: var(--text-muted); padding-left: 0.25rem;">➔</div>
                 </button>
 
+                <?php if ($allow_edit_registration) : ?>
                 <!-- Choice 2: Edit Existing Registration -->
                 <button type="button" id="choice-edit-btn" class="choice-card" style="background: rgba(11, 21, 40, 0.6); border: 2px solid var(--border-color); border-radius: var(--radius-lg); padding: 1.25rem; text-align: left; cursor: pointer; display: flex; align-items: center; gap: 1.25rem; transition: all var(--transition-normal); width: 100%; color: var(--text-primary); outline: none;">
                     <div style="width: 46px; height: 46px; border-radius: var(--radius-md); background: rgba(0, 102, 255, 0.15); border: 1px solid var(--accent-blue); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; color: var(--accent-blue); flex-shrink: 0;">
@@ -598,6 +602,7 @@ require_once __DIR__ . '/includes/public_header.php';
                     </div>
                     <div style="font-size: 1.2rem; color: var(--text-muted); padding-left: 0.25rem;">➔</div>
                 </button>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -866,12 +871,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 3. Step 1 Back to Menu
+    // 3. Step 1 Back to Menu / Home
     if (step1BackBtn && kitForm && stepperHeader && choiceContainer) {
         step1BackBtn.addEventListener('click', function() {
-            kitForm.style.display = 'none';
-            stepperHeader.style.display = 'none';
-            choiceContainer.style.display = 'block';
+            <?php if ($allow_edit_registration) : ?>
+                kitForm.style.display = 'none';
+                stepperHeader.style.display = 'none';
+                choiceContainer.style.display = 'block';
+            <?php else : ?>
+                window.location.href = '<?php echo $back_url; ?>';
+            <?php endif; ?>
         });
     }
 
@@ -1054,9 +1063,11 @@ function display_success_page($formTitle, $summary)
                     </div>
                 <?php endif; ?>
                 
+                <?php if ($allow_edit_registration) : ?>
                 <p style="color: var(--text-muted); font-size: 0.8rem; text-align: center; font-style: italic;">
                     Need to correct an entry again? You can search and edit it using your phone number at any time before manufacturing begins.
                 </p>
+                <?php endif; ?>
 
                 <div style="margin-top: 2rem; display: flex; justify-content: center; gap: 1rem;">
                     <?php if ($is_update) : ?>
