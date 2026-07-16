@@ -11,10 +11,11 @@ function get_form_fields_config($form_id)
     try {
         $db = get_db_connection();
         $stmt = $db->prepare("
-            SELECT fc.*, ffc.is_required 
+            SELECT fc.*, ffc.is_required, ffc.step_number, ffc.sort_order 
             FROM `form_field_configs` ffc
             JOIN `field_catalog` fc ON ffc.field_key = fc.field_key
             WHERE ffc.form_id = ? AND ffc.is_enabled = 1
+            ORDER BY ffc.step_number ASC, ffc.sort_order ASC
         ");
         $stmt->bind_param("i", $form_id);
         $stmt->execute();
@@ -26,6 +27,8 @@ function get_form_fields_config($form_id)
                     'label' => $row['field_label'],
                     'type' => $row['field_type'],
                     'required' => $row['is_required'] == 1,
+                    'step_number' => intval($row['step_number']),
+                    'sort_order' => intval($row['sort_order']),
                     'options' => $row['options_list'] ? explode(',', $row['options_list']) : null
                 ];
             }
