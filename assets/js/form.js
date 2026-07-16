@@ -115,9 +115,9 @@ function validateStep(step) {
                 }
                 if (field.id === 'jersey_number_opt1' || field.id === 'jersey_number_opt2' || field.id === 'jersey_number_opt3') {
                     var jnum = parseInt(val, 10);
-                    if (!isNaN(jnum) && (jnum < 0 || jnum > 99)) {
+                    if (!isNaN(jnum) && (jnum < 0 || jnum > 999)) {
                         isValid = false;
-                        addCustomError(parent, "Jersey number must be between 0 and 99.");
+                        addCustomError(parent, "Jersey number must be between 0 and 999.");
                     }
                 }
             }

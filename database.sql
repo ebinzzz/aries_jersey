@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS `registrations` (
   `full_sleeve_qty` INT DEFAULT 0,
   -- Jersey Print Details
   `jersey_name` VARCHAR(100) NULL,
-  -- Jersey Number Priority Options (0-99)
+  -- Jersey Number Priority Options (0-999)
   `jersey_number_opt1` VARCHAR(20) NULL,
   `jersey_number_opt2` VARCHAR(20) NULL,
   `jersey_number_opt3` VARCHAR(20) NULL,

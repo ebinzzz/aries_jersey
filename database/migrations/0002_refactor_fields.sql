@@ -3,7 +3,7 @@
 -- Spec: refactor.md
 -- Upper Jersey: 36,38,40,42,44 | Lower Jersey: 26,28,30,32,34,36 (even steps per spec)
 -- Helmet: Small,Medium,Large,XL | Pad: Youth,Small,Medium,Large
--- Batting Hand: radio | Sleeve: stepper 0-3 each, max 4 combined | Jersey#: 3 opts 0-99
+-- Batting Hand: radio | Sleeve: stepper 0-3 each, max 4 combined | Jersey#: 3 opts 0-999
 
 -- Add new columns (IF NOT EXISTS avoids re-run errors)
 ALTER TABLE `registrations`

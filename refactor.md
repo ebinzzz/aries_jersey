@@ -78,7 +78,7 @@ Display as checkboxes. (Developer can also implement this as quantity selectors 
 | Option 3 | Number |
 
 **Validation**
-- Jersey number should be between 0-99 (configurable).
+- Jersey number should be between 0-999 (configurable).
 - Duplicate numbers are not allowed.
 - Option 1 is highest priority.
 

@@ -194,8 +194,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_GET['success'])) {
             }
             if (in_array($key, ['jersey_number_opt1', 'jersey_number_opt2', 'jersey_number_opt3'])) {
                 $n = intval($val);
-                if ($n < 0 || $n > 99) {
-                    $errors[$key] = "Jersey number must be between 0 and 99.";
+                if ($n < 0 || $n > 999) {
+                    $errors[$key] = "Jersey number must be between 0 and 999.";
                 }
             }
             if ($is_qty) {
@@ -453,7 +453,7 @@ function render_field_input($key, $config, $errors)
         } elseif ($key === 'jersey_number') {
             $extra = 'inputmode="numeric" pattern="[0-9]*" autocomplete="off" min="0" max="999"';
         } elseif (in_array($key, ['jersey_number_opt1','jersey_number_opt2','jersey_number_opt3'])) {
-            $extra = 'inputmode="numeric" pattern="[0-9]*" autocomplete="off" min="0" max="99" placeholder="0–99"';
+            $extra = 'inputmode="numeric" pattern="[0-9]*" autocomplete="off" min="0" max="999" placeholder="0–999"';
             $type = 'number';
         } elseif ($key === 'player_id') {
             $extra = 'inputmode="text" autocomplete="off"';
@@ -545,7 +545,7 @@ function render_step_fields($fields, $errors) {
             if (isset($fields['jersey_number_opt1']['required']) && $fields['jersey_number_opt1']['required']) {
                 echo ' <span style="color:var(--primary);">*</span>';
             }
-            echo '<span style="font-weight:400;color:var(--text-muted);font-size:0.75rem;text-transform:none;letter-spacing:0;"> 0–99 · no duplicates</span>';
+            echo '<span style="font-weight:400;color:var(--text-muted);font-size:0.75rem;text-transform:none;letter-spacing:0;"> 0–999 · no duplicates</span>';
             echo '</label>';
             echo '<div class="jersey-number-grid">';
             
@@ -573,7 +573,7 @@ function render_step_fields($fields, $errors) {
                     echo ' <span style="color:var(--primary)">*</span>';
                 }
                 echo '</label>';
-                echo '<input type="number" id="' . $opt_key . '" name="' . $opt_key . '" class="form-control' . ($has_opt_err ? ' invalid' : '') . '" inputmode="numeric" min="0" max="99" placeholder="0–99" value="' . $opt_val . '" autocomplete="off" ' . (($opt_key === 'jersey_number_opt1' && ($fields[$opt_key]['required'] ?? false)) ? 'required' : '') . '>';
+                echo '<input type="number" id="' . $opt_key . '" name="' . $opt_key . '" class="form-control' . ($has_opt_err ? ' invalid' : '') . '" inputmode="numeric" min="0" max="999" placeholder="0–999" value="' . $opt_val . '" autocomplete="off" ' . (($opt_key === 'jersey_number_opt1' && ($fields[$opt_key]['required'] ?? false)) ? 'required' : '') . '>';
                 if ($has_opt_err) {
                     echo '<small style="color:var(--danger);font-size:0.75rem;display:block;margin-top:0.25rem;">' . htmlspecialchars($errors[$opt_key]) . '</small>';
                 }
@@ -828,7 +828,7 @@ require_once __DIR__ . '/includes/public_header.php';
     </div>
 </div>
 
-<script src="assets/js/form.js"></script>
+<script src="assets/js/form.js?v=<?php echo filemtime(__DIR__ . '/assets/js/form.js'); ?>"></script>
 <script>
 // Expose configuration flags to JS stepper
 var hasStep2 = <?php echo $has_step2 ? 'true' : 'false'; ?>;
@@ -981,6 +981,7 @@ function display_closed_page($formTitle)
 
 function display_success_page($formTitle, $summary)
 {
+    global $allow_edit_registration;
     ?>
     <!DOCTYPE html>
     <html lang="en">
