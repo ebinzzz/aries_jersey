@@ -332,10 +332,7 @@ try {
             <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem;">Kollam Sailors Playing Kit Design</p>
             
             <div class="jersey-video-container">
-                <video autoplay loop muted playsinline class="jersey-video">
-                    <source src="Animate_this_image.mp4" type="video/mp4">
-                    Your browser does not support the video tag.
-                </video>
+                <img src="assets/images/jersey_showcase.jpg" alt="Official Team Jersey" class="jersey-video">
             </div>
 
             <div style="width: 100%; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem; display: flex; flex-direction: column; gap: 0.75rem;">
