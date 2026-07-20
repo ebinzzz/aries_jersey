@@ -35,6 +35,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message_type = "danger";
             }
             $stmt->close();
+        } elseif ($action === 'clear_submissions') {
+            $form_id = intval($_POST['form_id'] ?? 0);
+            $stmt = $db->prepare("DELETE FROM `registrations` WHERE `form_id` = ?");
+            $stmt->bind_param("i", $form_id);
+            if ($stmt->execute()) {
+                $message = "All form submissions cleared successfully.";
+            } else {
+                $message = "Error clearing form submissions: " . $db->error;
+                $message_type = "danger";
+            }
+            $stmt->close();
         } elseif ($action === 'toggle_status') {
             $form_id = intval($_POST['form_id'] ?? 0);
             $current_status = $_POST['status'] ?? 'open';
@@ -237,16 +248,15 @@ $base_url = $protocol . $host . $uri . "/form.php?slug=";
                                             <a href="registrations.php?form_id=<?php echo $form['id']; ?>" class="btn btn-secondary btn-sm" title="View Submissions">
                                                 Submissions
                                             </a>
+                                            <button type="button" class="btn btn-secondary btn-sm" onclick="openClearModal(<?php echo $form['id']; ?>, '<?php echo htmlspecialchars(addslashes($form['title'])); ?>')" title="Clear All Submissions" <?php echo $form['reg_count'] == 0 ? 'disabled' : ''; ?>>
+                                                Clear
+                                            </button>
                                             <a href="form_edit.php?id=<?php echo $form['id']; ?>" class="btn btn-secondary btn-sm" title="Edit Form Settings">
                                                 Edit
                                             </a>
-                                            
-                                            <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this form and all its registrations? This action cannot be undone.');">
-                                                <input type="hidden" name="action" value="delete">
-                                                <input type="hidden" name="form_id" value="<?php echo $form['id']; ?>">
-                                                <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
-                                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                                            </form>
+                                            <button type="button" class="btn btn-danger btn-sm" onclick="openDeleteModal(<?php echo $form['id']; ?>, '<?php echo htmlspecialchars(addslashes($form['title'])); ?>')">
+                                                Delete
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -268,11 +278,77 @@ $base_url = $protocol . $host . $uri . "/form.php?slug=";
     </main>
 </div>
 
+<!-- Modal for Delete Form Confirmation -->
+<div id="deleteModal" class="modal-backdrop" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 99999; align-items: center; justify-content: center;">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>Delete Registration Form</h3>
+            <button type="button" class="modal-close" onclick="closeDeleteModal()">&times;</button>
+        </div>
+        <form method="POST">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="form_id" id="delete_modal_form_id" value="">
+            <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+            
+            <div class="modal-body">
+                <p style="margin-bottom: 0.75rem;">
+                    You are about to delete form <strong id="delete_modal_form_title" style="color: var(--text-primary);"></strong>. 
+                </p>
+                <p style="color: var(--danger); font-weight: 500; margin-bottom: 1rem;">
+                    ⚠️ This will permanently remove the form, its configuration, and ALL player registration data associated with it. This action CANNOT be undone.
+                </p>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="delete_confirm_text">Type <strong style="color: var(--primary);">DELETE</strong> to confirm:</label>
+                    <input type="text" id="delete_confirm_text" class="form-control" placeholder="Type DELETE here" autocomplete="off" oninput="validateDeleteConfirm()">
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button type="submit" id="delete_confirm_btn" class="btn btn-danger" disabled>Delete Form</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal for Clear Submissions Confirmation -->
+<div id="clearModal" class="modal-backdrop" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; background: rgba(3, 7, 18, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 99999; align-items: center; justify-content: center;">
+    <div class="modal-card warning-theme">
+        <div class="modal-header">
+            <h3>Clear Form Submissions</h3>
+            <button type="button" class="modal-close" onclick="closeClearModal()">&times;</button>
+        </div>
+        <form method="POST">
+            <input type="hidden" name="action" value="clear_submissions">
+            <input type="hidden" name="form_id" id="clear_modal_form_id" value="">
+            <input type="hidden" name="csrf_token" value="<?php echo $csrf_token; ?>">
+            
+            <div class="modal-body">
+                <p style="margin-bottom: 0.75rem;">
+                    You are about to clear all submissions for <strong id="clear_modal_form_title" style="color: var(--text-primary);"></strong>.
+                </p>
+                <p style="color: var(--warning); font-weight: 500; margin-bottom: 1rem;">
+                    ⚠️ All player registration entries for this form will be permanently deleted. The form itself will remain active.
+                </p>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" for="clear_confirm_text">Type <strong style="color: var(--warning);">CLEAR</strong> to confirm:</label>
+                    <input type="text" id="clear_confirm_text" class="form-control" placeholder="Type CLEAR here" autocomplete="off" oninput="validateClearConfirm()">
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeClearModal()">Cancel</button>
+                <button type="submit" id="clear_confirm_btn" class="btn btn-danger" style="background: var(--warning); border-color: var(--warning);" disabled>Clear All Submissions</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 function copyToClipboard(elementId, button) {
     var copyText = document.getElementById(elementId);
     copyText.select();
-    copyText.setSelectionRange(0, 99999); // For mobile devices
+    copyText.setSelectionRange(0, 99999);
     
     navigator.clipboard.writeText(copyText.value).then(function() {
         var originalText = button.textContent;
@@ -291,6 +367,69 @@ function copyToClipboard(elementId, button) {
         alert("Failed to copy link: " + err);
     });
 }
+
+function openDeleteModal(formId, formTitle) {
+    document.getElementById('delete_modal_form_id').value = formId;
+    document.getElementById('delete_modal_form_title').textContent = formTitle;
+    document.getElementById('delete_confirm_text').value = '';
+    document.getElementById('delete_confirm_btn').disabled = true;
+    var modal = document.getElementById('deleteModal');
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+    setTimeout(function() {
+        document.getElementById('delete_confirm_text').focus();
+    }, 100);
+}
+
+function closeDeleteModal() {
+    var modal = document.getElementById('deleteModal');
+    modal.style.display = 'none';
+    modal.classList.remove('active');
+}
+
+function validateDeleteConfirm() {
+    var val = document.getElementById('delete_confirm_text').value.trim();
+    document.getElementById('delete_confirm_btn').disabled = (val.toUpperCase() !== 'DELETE');
+}
+
+function openClearModal(formId, formTitle) {
+    document.getElementById('clear_modal_form_id').value = formId;
+    document.getElementById('clear_modal_form_title').textContent = formTitle;
+    document.getElementById('clear_confirm_text').value = '';
+    document.getElementById('clear_confirm_btn').disabled = true;
+    var modal = document.getElementById('clearModal');
+    modal.style.display = 'flex';
+    modal.classList.add('active');
+    setTimeout(function() {
+        document.getElementById('clear_confirm_text').focus();
+    }, 100);
+}
+
+function closeClearModal() {
+    var modal = document.getElementById('clearModal');
+    modal.style.display = 'none';
+    modal.classList.remove('active');
+}
+
+function validateClearConfirm() {
+    var val = document.getElementById('clear_confirm_text').value.trim();
+    document.getElementById('clear_confirm_btn').disabled = (val.toUpperCase() !== 'CLEAR');
+}
+
+window.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal-backdrop')) {
+        closeDeleteModal();
+        closeClearModal();
+    }
+});
+
+window.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeDeleteModal();
+        closeClearModal();
+    }
+});
 </script>
 </body>
 </html>
+
